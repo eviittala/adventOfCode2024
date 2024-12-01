@@ -1,5 +1,4 @@
-# adventOfCode2024
-Advent Of Code 2024
+# AdventOfCode2024
 
 How to build:
 1. mkdir build
