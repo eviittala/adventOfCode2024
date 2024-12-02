@@ -27,4 +27,12 @@ void printVec(const std::vector<int32_t>& vec) {
         std::cout << data << std::endl;
     }
 }
+void printVecVec(const std::vector<std::vector<int32_t>>& vec) {
+    for (const auto& i : vec) {
+        for (const auto& j : i) {
+            std::cout << j << " ";
+        }
+        std::cout << std::endl;
+    }
+}
 }  // namespace common
