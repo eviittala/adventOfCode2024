@@ -20,10 +20,8 @@ void parseData(const std::string& txt) {
     }
 }
 
-uint32_t getResult() {
-    uint32_t result{};
-    for (const auto& vec : vectors) {
-        if (std::is_sorted(std::begin(vec), std::end(vec),
+bool checkData(const std::vector<int32_t>& vec) {
+    return (std::is_sorted(std::begin(vec), std::end(vec),
                            [](const auto next, const auto first) {
                                if (std::abs(next - first) > 3) return true;
                                if (first == next) return true;
@@ -36,8 +34,23 @@ uint32_t getResult() {
                                return next > first;
                            })
 
-        ) {
+    );
+}
+
+uint32_t getResult() {
+    uint32_t result{};
+    for (const auto& vec : vectors) {
+        if (checkData(vec)) {
             ++result;
+        } else {
+            for (size_t i{}; i < vec.size(); ++i) {
+                std::vector<int32_t> tmp(std::begin(vec), std::end(vec));
+                tmp.erase(std::begin(tmp) + i);
+                if (checkData(tmp)) {
+                    ++result;
+                    break;
+                }
+            }
         }
     }
     return result;
