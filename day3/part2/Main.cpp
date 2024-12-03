@@ -33,6 +33,7 @@ uint32_t getResult(const std::string& str) {
 
 int main(int args, char* argv[]) {
     auto str = common::readFile(common::getInputFileDir(__FILE__));
+    str = common::removeLineBreaks(str);
     std::cout << "Result: " << getResult(str) << std::endl;
     return 0;
 }

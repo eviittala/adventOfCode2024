@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <regex>
 
 namespace common {
 std::string readFile(std::string file) {
@@ -27,6 +28,7 @@ void printVec(const std::vector<int32_t>& vec) {
         std::cout << data << std::endl;
     }
 }
+
 void printVecVec(const std::vector<std::vector<int32_t>>& vec) {
     for (const auto& i : vec) {
         for (const auto& j : i) {
@@ -34,5 +36,10 @@ void printVecVec(const std::vector<std::vector<int32_t>>& vec) {
         }
         std::cout << std::endl;
     }
+}
+
+std::string removeLineBreaks(const std::string& str) {
+    std::regex newlines_re("\n+");
+    return std::regex_replace(str, newlines_re, "");
 }
 }  // namespace common
