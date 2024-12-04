@@ -23,7 +23,7 @@ std::string getInputFileDir(const char* compiledFile) {
     return dir + "/" + "Input.txt";
 }
 
-void printVec(const std::vector<int32_t>& vec) {
+void printVec(const std::vector<int>& vec) {
     for (auto& data : vec) {
         std::cout << data << std::endl;
     }
