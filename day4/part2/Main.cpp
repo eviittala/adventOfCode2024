@@ -4,28 +4,42 @@
 
 #include "common.hpp"
 
+std::vector<int> makeDirs(const int len) {
+    return {-len + 1, len - 1, len + 1, -len - 1};
+}
+
+bool isValidX(const std::string& str, const int idx1, const int idx2) {
+    if (idx1 < 0 || (size_t)idx1 >= str.length()) {
+        return false;
+    }
+    if (idx2 < 0 || (size_t)idx2 >= str.length()) {
+        return false;
+    }
+    return (str[idx1] == 'M' and str[idx2] == 'S') or
+           (str[idx2] == 'M' and str[idx1] == 'S');
+}
+
+uint32_t countWords(const int idx, const std::string& str,
+                    const std::vector<int>& dirs) {
+    uint32_t counts{};
+
+    if (isValidX(str, idx + dirs.at(0), idx + dirs.at(1)) &&
+        isValidX(str, idx + dirs.at(2), idx + dirs.at(3))) {
+        ++counts;
+    }
+
+    return counts;
+}
+
 uint32_t getResult(const std::string& str) {
-    std::string tmp = str;
-    std::string tmp2;
-    std::regex re(R"(mul\((\d{1,3}),(\d{1,3})\))");
-    std::regex skip(R"((.*?)(don't\(\).*?do\(\)))");
-    std::smatch sm;
     uint32_t res{};
+    const int len = str.find('\n') + 1;
+    const auto dirs = makeDirs(len);
 
-    while (std::regex_search(tmp, sm, skip)) {
-        tmp2 += sm[1].str();
-        tmp = sm.suffix();
-    }
-
-    if (std::regex_search(tmp, sm, std::regex(R"((.*?)don't\(\))"))) {
-        tmp = sm[1].str();
-    }
-
-    tmp2 += tmp;
-
-    while (std::regex_search(tmp2, sm, re)) {
-        res += std::stoi(sm[1].str()) * std::stoi(sm[2].str());
-        tmp2 = sm.suffix();
+    for (size_t i{}; i < str.length(); ++i) {
+        if (str[i] == 'A') {
+            res += countWords(i, str, dirs);
+        }
     }
 
     return res;
@@ -33,7 +47,6 @@ uint32_t getResult(const std::string& str) {
 
 int main(int args, char* argv[]) {
     auto str = common::readFile(common::getInputFileDir(__FILE__));
-    str = common::removeLineBreaks(str);
     std::cout << "Result: " << getResult(str) << std::endl;
     return 0;
 }
