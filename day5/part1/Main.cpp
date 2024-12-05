@@ -59,7 +59,6 @@ uint32_t getResult(const std::string& str) {
             for (size_t e{i + 1}; success && e < update.size(); ++e) {
                 if (!checkOrder(update.at(i), update.at(e))) {
                     success = false;
-                    break;
                 }
             }
         }
