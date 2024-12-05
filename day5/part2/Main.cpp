@@ -48,22 +48,11 @@ uint32_t getResult(const std::string& str) {
     parseData(str);
 
     for (auto& update : updates) {
-        bool success = false;
-        for (size_t i{}; i < update.size(); ++i) {
-            for (size_t s{}; !success && s < i; ++s) {
-                if (!checkOrder(update.at(s), update.at(i))) {
-                    success = true;
-                }
-            }
+        const bool isSorted = std::is_sorted(
+            std::begin(update), std::end(update),
+            [](const int a, const int b) { return checkOrder(a, b); });
 
-            for (size_t e{i + 1}; !success && e < update.size(); ++e) {
-                if (!checkOrder(update.at(i), update.at(e))) {
-                    success = true;
-                }
-            }
-        }
-
-        if (success) {
+        if (!isSorted) {
             std::sort(std::begin(update), std::end(update),
                       [](int a, int b) { return checkOrder(a, b); });
             res += update.at(update.size() / 2);
