@@ -4,38 +4,68 @@
 
 #include "common.hpp"
 
-std::vector<int> makeDirs(const int len) {
-    return {-len, -len + 1, 1, len + 1, len, len - 1, -1, -len - 1};
-}
+std::vector<std::pair<int, int>> orders;
+std::vector<std::vector<int>> updates;
 
-uint32_t countWords(const int idx, const std::string& str,
-                    const std::vector<int>& dirs) {
-    const std::string word = "MAS";
-    uint32_t counts{};
-    for (const auto dir : dirs) {
-        uint32_t hits{};
-        int i{idx + dir};
-        for (const auto c : word) {
-            if (i < 0 || i >= str.length() || c != str.at(i)) {
-                break;
-            }
-            if (++hits == word.length()) {
-                ++counts;
-            }
-            i += dir;
+void parseData(const std::string& str) {
+    std::regex re(R"((\d+)\|(\d+))");
+    std::smatch sm;
+    std::string tmp(str);
+
+    while (std::regex_search(tmp, sm, re)) {
+        const int var1 = std::stoi(sm[1].str());
+        const int var2 = std::stoi(sm[2].str());
+        orders.emplace_back(var1, var2);
+        tmp = sm.suffix();
+    }
+
+    std::regex re2(R"((\d+))");
+    std::istringstream iss(tmp);
+
+    for (std::string line; std::getline(iss, line);) {
+        std::vector<int> tVec;
+        while (std::regex_search(line, sm, re2)) {
+            tVec.push_back(std::stoi(sm[1].str()));
+            line = sm.suffix();
+        }
+        if (!tVec.empty()) {
+            updates.push_back(tVec);
         }
     }
-    return counts;
+}
+
+bool checkOrder(const int val1, const int val2) {
+    for (auto& [order_num1, order_num2] : orders) {
+        if (order_num1 == val2 && order_num2 == val1) {
+            return false;
+        }
+    }
+    return true;
 }
 
 uint32_t getResult(const std::string& str) {
     uint32_t res{};
-    const int len = str.find('\n') + 1;
-    const auto dirs = makeDirs(len);
+    parseData(str);
 
-    for (size_t i{}; i < str.length(); ++i) {
-        if (str[i] == 'X') {
-            res += countWords(i, str, dirs);
+    for (auto& update : updates) {
+        bool success = true;
+        for (size_t i{}; i < update.size(); ++i) {
+            for (size_t s{}; success && s < i; ++s) {
+                if (!checkOrder(update.at(s), update.at(i))) {
+                    success = false;
+                }
+            }
+
+            for (size_t e{i + 1}; success && e < update.size(); ++e) {
+                if (!checkOrder(update.at(i), update.at(e))) {
+                    success = false;
+                    break;
+                }
+            }
+        }
+
+        if (success) {
+            res += update.at(update.size() / 2);
         }
     }
 

@@ -29,6 +29,12 @@ void printVec(const std::vector<int>& vec) {
     }
 }
 
+void printVecPair(const std::vector<std::pair<int, int>>& vec) {
+    for (auto& data : vec) {
+        std::cout << data.first << ", " << data.second << std::endl;
+    }
+}
+
 void printVecVec(const std::vector<std::vector<int32_t>>& vec) {
     for (const auto& i : vec) {
         for (const auto& j : i) {
