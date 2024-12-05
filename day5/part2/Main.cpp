@@ -4,41 +4,69 @@
 
 #include "common.hpp"
 
-std::vector<int> makeDirs(const int len) {
-    return {-len + 1, len - 1, len + 1, -len - 1};
+std::vector<std::pair<int, int>> orders;
+std::vector<std::vector<int>> updates;
+
+void parseData(const std::string& str) {
+    std::regex re(R"((\d+)\|(\d+))");
+    std::smatch sm;
+    std::string tmp(str);
+
+    while (std::regex_search(tmp, sm, re)) {
+        const int var1 = std::stoi(sm[1].str());
+        const int var2 = std::stoi(sm[2].str());
+        orders.emplace_back(var1, var2);
+        tmp = sm.suffix();
+    }
+
+    std::regex re2(R"((\d+))");
+    std::istringstream iss(tmp);
+
+    for (std::string line; std::getline(iss, line);) {
+        std::vector<int> tVec;
+        while (std::regex_search(line, sm, re2)) {
+            tVec.push_back(std::stoi(sm[1].str()));
+            line = sm.suffix();
+        }
+        if (!tVec.empty()) {
+            updates.push_back(tVec);
+        }
+    }
 }
 
-bool isValidX(const std::string& str, const int idx1, const int idx2) {
-    if (idx1 < 0 || (size_t)idx1 >= str.length()) {
-        return false;
+bool checkOrder(const int val1, const int val2) {
+    for (auto& [order_num1, order_num2] : orders) {
+        if (order_num1 == val2 && order_num2 == val1) {
+            return false;
+        }
     }
-    if (idx2 < 0 || (size_t)idx2 >= str.length()) {
-        return false;
-    }
-    return (str[idx1] == 'M' and str[idx2] == 'S') or
-           (str[idx2] == 'M' and str[idx1] == 'S');
-}
-
-uint32_t countWords(const int idx, const std::string& str,
-                    const std::vector<int>& dirs) {
-    uint32_t counts{};
-
-    if (isValidX(str, idx + dirs.at(0), idx + dirs.at(1)) &&
-        isValidX(str, idx + dirs.at(2), idx + dirs.at(3))) {
-        ++counts;
-    }
-
-    return counts;
+    return true;
 }
 
 uint32_t getResult(const std::string& str) {
     uint32_t res{};
-    const int len = str.find('\n') + 1;
-    const auto dirs = makeDirs(len);
+    parseData(str);
 
-    for (size_t i{}; i < str.length(); ++i) {
-        if (str[i] == 'A') {
-            res += countWords(i, str, dirs);
+    for (auto& update : updates) {
+        bool success = false;
+        for (size_t i{}; i < update.size(); ++i) {
+            for (size_t s{}; !success && s < i; ++s) {
+                if (!checkOrder(update.at(s), update.at(i))) {
+                    success = true;
+                }
+            }
+
+            for (size_t e{i + 1}; !success && e < update.size(); ++e) {
+                if (!checkOrder(update.at(i), update.at(e))) {
+                    success = true;
+                }
+            }
+        }
+
+        if (success) {
+            std::sort(std::begin(update), std::end(update),
+                      [](int a, int b) { return checkOrder(a, b); });
+            res += update.at(update.size() / 2);
         }
     }
 
