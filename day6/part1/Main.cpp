@@ -17,8 +17,10 @@ uint32_t getResult(const std::string& str) {
     while (true) {
         visit.insert(pos);
         const int newPos = pos + dirs.at(dir);
-        if (newPos < 0 || newPos >= str.length() || str.at(newPos) == '\n')
+
+        if (newPos < 0 || newPos >= str.length() || str.at(newPos) == '\n') {
             break;
+        }
 
         if (str.at(newPos) == '.' || str.at(newPos) == '^') {
             pos = newPos;
