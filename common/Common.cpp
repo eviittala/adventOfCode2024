@@ -48,4 +48,12 @@ std::string removeLineBreaks(const std::string& str) {
     std::regex newlines_re("\n+");
     return std::regex_replace(str, newlines_re, "");
 }
+
+uint32_t count(const std::string& str, const char arg) {
+    uint32_t count{};
+    for (const char c : str) {
+        if (c == arg) ++count;
+    }
+    return count;
+}
 }  // namespace common
