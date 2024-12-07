@@ -56,4 +56,25 @@ uint32_t count(const std::string& str, const char arg) {
     }
     return count;
 }
+
+std::vector<std::vector<uint64_t>> parseUintData(const std::string& str) {
+    std::vector<std::vector<uint64_t>> retVec;
+    std::istringstream iss{str};
+    std::smatch sm;
+
+    for (std::string line; std::getline(iss, line);) {
+        std::vector<uint64_t> tVec;
+        while (std::regex_search(line, sm, std::regex(R"((\d+))"))) {
+            try {
+                tVec.push_back(std::stoll(sm[1].str()));
+                line = sm.suffix();
+            } catch (...) {
+                std::cout << "ERROR: " << sm[0].str() << std::endl;
+                abort();
+            }
+        }
+        retVec.push_back(std::move(tVec));
+    }
+    return retVec;
+}
 }  // namespace common
