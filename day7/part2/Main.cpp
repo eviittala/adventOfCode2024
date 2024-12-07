@@ -16,7 +16,6 @@ uint64_t calculate(const uint64_t var1, const uint64_t var2, const char c) {
 
 char bitsToChar(const uint64_t bits, const size_t idx) {
     switch ((bits >> (idx * 2)) & 0x3) {
-        case 0x3:
         case 0x0:
             return '+';
         case 0x01:
@@ -24,7 +23,7 @@ char bitsToChar(const uint64_t bits, const size_t idx) {
         case 0x02:
             return '|';
     }
-    abort();
+    throw std::logic_error("no worries");
 }
 
 std::vector<std::vector<char>> getEquations(const uint64_t len) {
@@ -35,12 +34,16 @@ std::vector<std::vector<char>> getEquations(const uint64_t len) {
 
     for (size_t i{0}; i < size; ++i) {
         std::vector<char> vec(len);
-        for (size_t j{0}; j < len; ++j) {
-            vec.at(j) = bitsToChar(bits, j);
+        try {
+            for (size_t j{0}; j < len; ++j) {
+                vec.at(j) = bitsToChar(bits, j);
+            }
+            ret.at(c++) = std::move(vec);
+        } catch (const std::logic_error& e) {
         }
         bits += 1;
-        ret.at(c++) = std::move(vec);
     }
+    ret.resize(c);
     return ret;
 }
 
