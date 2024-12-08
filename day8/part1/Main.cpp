@@ -6,24 +6,13 @@
 
 #include "common.hpp"
 
-std::pair<int, int> getXY(const int pos, const size_t lineSize) {
-    const int x = pos / lineSize;
-    const int y = pos % lineSize;
-    return {x, y};
-}
-
-bool collinear(const int x1, const int y1, const int x2, const int y2,
-               const int x3, const int y3) {
-    return (y1 - y2) * (x1 - x3) == (y1 - y3) * (x1 - x2);
-}
-
 bool isValidNode(const int node, const int pos1, const int pos2,
                  const size_t lineSize) {
-    const auto nodeXY = getXY(node, lineSize);
-    const auto pos1XY = getXY(pos1, lineSize);
-    const auto pos2XY = getXY(pos2, lineSize);
-    return collinear(nodeXY.first, nodeXY.second, pos1XY.first, pos1XY.second,
-                     pos2XY.first, pos2XY.second);
+    const auto nodeXY = common::getXY(node, lineSize);
+    const auto pos1XY = common::getXY(pos1, lineSize);
+    const auto pos2XY = common::getXY(pos2, lineSize);
+    return common::isCollinear(nodeXY.first, nodeXY.second, pos1XY.first,
+                               pos1XY.second, pos2XY.first, pos2XY.second);
 }
 
 uint64_t getResult(const std::string& str) {
