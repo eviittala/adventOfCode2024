@@ -88,4 +88,15 @@ std::vector<std::vector<uint64_t>> parseUintData(const std::string& str) {
 std::vector<int> getDirections(const int len) {
     return {-len, -len + 1, 1, len + 1, len, len - 1, -1, -len - 1};
 }
+
+bool isCollinear(const int x1, const int y1, const int x2, const int y2,
+                 const int x3, const int y3) {
+    return (x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2)) == 0;
+}
+
+std::pair<int, int> getXY(const int pos, const size_t lineSize) {
+    const int x = pos / lineSize;
+    const int y = pos % lineSize;
+    return {x, y};
+}
 }  // namespace common
