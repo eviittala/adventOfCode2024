@@ -84,4 +84,8 @@ std::vector<std::vector<uint64_t>> parseUintData(const std::string& str) {
     }
     return retVec;
 }
+
+std::vector<int> getDirections(const int len) {
+    return {-len, -len + 1, 1, len + 1, len, len - 1, -1, -len - 1};
+}
 }  // namespace common

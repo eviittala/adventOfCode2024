@@ -12,4 +12,5 @@ void printVecVec(const std::vector<std::vector<int32_t>>& vec);
 std::string removeLineBreaks(const std::string& str);
 uint32_t count(const std::string& str, const char arg);
 std::vector<std::vector<uint64_t>> parseUintData(const std::string& str);
+std::vector<int> getDirections(const int len);
 }  // namespace common
