@@ -7,40 +7,39 @@
 
 #include "common.hpp"
 
-// void swap(char c1, char
+void printVec(const std::vector<uint64_t>& vec) {
+    for (auto& data : vec) {
+        if (data == UINT64_MAX)
+            std::cout << '.' << ", ";
+        else
+            std::cout << data << ", ";
+    }
+    std::cout << std::endl;
+}
 
-uint64_t getCheckSum(const std::string& str) {
+uint64_t getCheckSum(const std::vector<uint64_t>& vec) {
     uint64_t checkSum{};
-    const auto size = str.find_first_of(".");
 
-    for (uint64_t i{}; i < size; ++i) {
-        const char c = str[i];
-        const uint64_t sum = i * (c - '0');
+    for (uint64_t i{}; i < vec.size(); ++i) {
+        if (vec.at(i) == UINT64_MAX) break;
+        const uint64_t sum = i * vec.at(i);
         checkSum += sum;
     }
 
     return checkSum;
 }
 
-std::string getBlocks(const std::string& str) {
-    std::string ret;
+std::vector<uint64_t> getBlocks(const std::string& str) {
+    std::vector<uint64_t> ret;
     uint64_t c{};
     for (size_t i{}; i < str.size(); ++i) {
         if (0 < std::isdigit(str[i])) {
             const size_t count = str[i] - '0';
             if (i % 2 == 0) {
-                const char y = '0' + c++;
-                try {
-                    ret.append(count, y);
-                } catch (const std::length_error&) {
-                    std::cout << "length error: " << str[i] << std::endl;
-                }
+                for (size_t j{}; j < count; ++j) ret.emplace_back(c);
+                ++c;
             } else {
-                try {
-                    ret.append(count, '.');
-                } catch (const std::length_error&) {
-                    std::cout << "length error2 : " << str[i] << std::endl;
-                }
+                for (size_t j{}; j < count; ++j) ret.emplace_back(UINT64_MAX);
             }
         }
     }
@@ -49,23 +48,24 @@ std::string getBlocks(const std::string& str) {
 
 uint64_t getResult(const std::string& str) {
     auto blocks = getBlocks(str);
-    // std::cout << blocks << std::endl;
 
     while (true) {
-        const auto pos1 = blocks.find_first_of(".");
-        const auto pos2 = blocks.find_last_not_of(".\n");
-        if (pos1 < pos2) {
-            std::swap(blocks[pos1], blocks[pos2]);
+        auto it1 = std::find(std::begin(blocks), std::end(blocks), UINT64_MAX);
+        auto it2 = std::find_if_not(
+            std::rbegin(blocks), std::rend(blocks),
+            [](const uint64_t arg) { return arg == UINT64_MAX; });
+        if (it1 != std::end(blocks) && it2 != std::rend(blocks) &&
+            std::distance(it1, std::end(blocks)) >
+                std::distance(std::rbegin(blocks), it2)) {
+            std::swap(*it1, *it2);
         } else
             break;
     }
-    // std::cout << str << std::endl;
     return getCheckSum(blocks);
 }
 
 int main(int args, char* argv[]) {
-    auto str = common::readFile(common::getInputFileDir(__FILE__));
-    // std::cout << str << std::endl;
+    const auto str = common::readFile(common::getInputFileDir(__FILE__));
     std::cout << "Result: " << getResult(str) << std::endl;
     return 0;
 }

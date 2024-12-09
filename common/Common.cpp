@@ -25,8 +25,16 @@ std::string getInputFileDir(const char* compiledFile) {
 
 void printVec(const std::vector<int>& vec) {
     for (auto& data : vec) {
-        std::cout << data << std::endl;
+        std::cout << data << ", ";
     }
+    std::cout << std::endl;
+}
+
+void printVec(const std::vector<uint64_t>& vec) {
+    for (auto& data : vec) {
+        std::cout << data << ", ";
+    }
+    std::cout << std::endl;
 }
 
 void printVecChar(const std::vector<char>& vec) {
