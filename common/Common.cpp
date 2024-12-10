@@ -93,8 +93,14 @@ std::vector<std::vector<uint64_t>> parseUintData(const std::string& str) {
     return retVec;
 }
 
+std::vector<int> getDirections2d(const int len) { return {-len, 1, len, -1}; }
+
 std::vector<int> getDirections(const int len) {
     return {-len, -len + 1, 1, len + 1, len, len - 1, -1, -len - 1};
+}
+
+bool isValidPos(const std::string& str, const int pos) {
+    return 0 <= pos && pos < (int)str.size() && str[pos] != '\n';
 }
 
 bool isCollinear(const int x1, const int y1, const int x2, const int y2,
