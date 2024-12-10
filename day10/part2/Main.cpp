@@ -8,31 +8,30 @@
 
 #include "common.hpp"
 
-std::unordered_map<int, std::set<int>> save;
+std::unordered_map<int, uint64_t> save;
 
-std::set<int> checkNode(const std::string& str, const int pos) {
+uint64_t checkNode(const std::string& str, const int pos) {
     if (save.contains(pos)) {
         return save[pos];
     }
 
     const int val = common::toInt(str.at(pos));
     if (val == 9) {
-        return {pos};
+        return 1;
     }
 
-    std::set<int> ret;
+    uint64_t ret{};
     const auto lineLength = str.find('\n') + 1;
 
     for (const auto dir : common::getDirections2d(lineLength)) {
         auto newPos = pos + dir;
         if (common::isValidPos(str, newPos) &&
             (val + 1) == common::toInt(str[newPos])) {
-            auto result = checkNode(str, newPos);
-            ret.insert(std::begin(result), std::end(result));
+            ret += checkNode(str, newPos);
         }
     }
 
-    save[pos] = {std::begin(ret), std::end(ret)};
+    save[pos] = ret;
     return ret;
 }
 
@@ -41,8 +40,7 @@ uint64_t getResult(const std::string& str) {
 
     for (int i{}; i < (int)str.size(); ++i) {
         if (str[i] == '0') {
-            auto result = checkNode(str, i);
-            scores += result.size();
+            scores += checkNode(str, i);
         }
     }
 
