@@ -46,22 +46,6 @@ std::pair<size_t, size_t> findBlock(const std::vector<uint64_t>& blocks,
                          [val](const uint64_t arg) { return arg == val; });
     return {std::distance(std::begin(blocks), startIt),
             std::distance(std::begin(blocks), endIt)};
-    /*
-        for (size_t i{idx}; i < blocks.size(); ++i) {
-            if (blocks.at(i) == val && ret.first == UINT64_MAX) {
-                ret.first = i;
-            } else if (blocks.at(i) != val && ret.first != UINT64_MAX &&
-                       ret.second == UINT64_MAX) {
-                ret.second = i;
-                return ret;
-            } else if (blocks.at(i) == val && ret.first != UINT64_MAX &&
-                       ret.second == UINT64_MAX && (i + 1) == blocks.size()) {
-                ret.second = i + 1;
-                return ret;
-            }
-        }
-        return ret;
-        */
 }
 
 bool isValidPair(const std::pair<size_t, size_t>& arg) {
