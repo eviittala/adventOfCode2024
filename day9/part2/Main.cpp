@@ -38,18 +38,12 @@ std::vector<uint64_t> getBlocks(const std::string& str) {
 
 std::pair<size_t, size_t> findBlock(const std::vector<uint64_t>& blocks,
                                     const uint64_t val, const size_t idx = 0) {
-    std::pair<size_t, size_t> ret{UINT64_MAX, UINT64_MAX};
-
     auto startIt = std::find(std::begin(blocks) + idx, std::end(blocks), val);
     auto endIt =
         std::find_if_not(startIt, std::end(blocks),
                          [val](const uint64_t arg) { return arg == val; });
     return {std::distance(std::begin(blocks), startIt),
             std::distance(std::begin(blocks), endIt)};
-}
-
-bool isValidPair(const std::pair<size_t, size_t>& arg) {
-    return arg.first != UINT64_MAX && arg.second != UINT64_MAX;
 }
 
 size_t getBlockSize(const std::pair<size_t, size_t>& arg) {
@@ -66,7 +60,6 @@ uint64_t getResult(const std::string& str) {
     while (0 < id) {
         auto bounds1 = findBlock(blocks, UINT64_MAX, startIdx);
         auto bounds2 = findBlock(blocks, id);
-        if (!isValidPair(bounds1) || !isValidPair(bounds2)) abort();
         if (bounds1.first < bounds2.first &&
             getBlockSize(bounds1) >= getBlockSize(bounds2)) {
             std::swap_ranges(std::begin(blocks) + bounds2.first,
