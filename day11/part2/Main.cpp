@@ -10,7 +10,7 @@
 
 namespace {
 constexpr uint64_t nbrOfBlinks{75};
-std::map<std::pair<uint64_t, uint64_t>, uint64_t> save;
+std::map<std::pair<uint64_t, uint64_t>, uint64_t> cache;
 }  // namespace
 
 bool evenNbrOfDigits(const uint64_t val) {
@@ -36,8 +36,8 @@ uint64_t getNbrOfStones(const uint64_t val, const uint64_t idx) {
         return 1;
     }
 
-    if (save.contains(key)) {
-        return save.at(key);
+    if (cache.contains(key)) {
+        return cache.at(key);
     }
 
     uint64_t ret{};
@@ -50,7 +50,7 @@ uint64_t getNbrOfStones(const uint64_t val, const uint64_t idx) {
         ret += getNbrOfStones(val * 2024, idx + 1);
     }
 
-    save[key] = ret;
+    cache[key] = ret;
     return ret;
 }
 
