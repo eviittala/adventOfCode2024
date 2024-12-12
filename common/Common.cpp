@@ -109,8 +109,8 @@ bool isCollinear(const int x1, const int y1, const int x2, const int y2,
 }
 
 std::pair<int, int> getXY(const int pos, const size_t lineSize) {
-    const int x = pos / lineSize;
-    const int y = pos % lineSize;
+    const int x = pos % lineSize;
+    const int y = pos / lineSize;
     return {x, y};
 }
 }  // namespace common
