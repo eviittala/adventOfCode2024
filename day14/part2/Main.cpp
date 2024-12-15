@@ -10,79 +10,101 @@
 #include "common.hpp"
 
 struct Token {
-    uint64_t a_x{};
-    uint64_t a_y{};
-    uint64_t b_y{};
-    uint64_t b_x{};
-    uint64_t p_x{};
-    uint64_t p_y{};
+    int pos_x{};
+    int pos_y{};
+    int v_x{};
+    int v_y{};
 };
 
-void printData(const std::vector<Token>& vec) {
-    std::cout << "Printing the vec" << std::endl;
-
-    for (const auto& token : vec) {
-        std::cout << "A_x: " << token.a_x << ", ";
-        std::cout << "A_y: " << token.a_y << ", ";
-        std::cout << "B_x: " << token.b_x << ", ";
-        std::cout << "B_y: " << token.b_y << ", ";
-        std::cout << "P_x: " << token.p_x << ", ";
-        std::cout << "P_y: " << token.p_y;
-        std::cout << std::endl;
-    }
-
-    std::cout << std::endl;
+void printVec(const std::vector<Token>& args) {
+    for (auto& arg : args) {
+        std::cout << arg.pos_x << ", ";
+        std::cout << arg.pos_y << ", ";
+        std::cout << arg.v_x << ", ";
+        std::cout << arg.v_y << std::endl;
+    };
 }
 
 std::vector<Token> parseData(const std::string& str) {
     std::vector<Token> ret;
-    std::regex re(
-        R"(Button A: X\+(\d+), Y\+(\d+)\nButton B: X\+(\d+), Y\+(\d+)\nPrize: X=(\d+), Y=(\d+)\n)");
+    std::regex re(R"(p=(\d+),(\d+) v=(-?\d+),(-?\d+))");
     std::string temp = str;
     std::smatch sm;
 
     while (std::regex_search(temp, sm, re)) {
         Token token;
-        token.a_x = std::stoull(sm[1].str());
-        token.a_y = std::stoull(sm[2].str());
-        token.b_x = std::stoull(sm[3].str());
-        token.b_y = std::stoull(sm[4].str());
-        token.p_x = std::stoull(sm[5].str()) + 10000000000000;
-        token.p_y = std::stoull(sm[6].str()) + 10000000000000;
+        token.pos_x = std::stoi(sm[1].str());
+        token.pos_y = std::stoi(sm[2].str());
+        token.v_x = std::stoi(sm[3].str());
+        token.v_y = std::stoi(sm[4].str());
         ret.push_back(token);
         temp = sm.suffix();
     }
     return ret;
 }
 
-uint64_t getResult(const std::string& str) {
-    uint64_t res{};
-    const auto machines = parseData(str);
-    // printData(machines);
-
-    for (const auto& machine : machines) {
-        uint64_t price{};
-
-        const double a_x = machine.a_x;
-        const double a_y = machine.a_y;
-        const double b_x = machine.b_x;
-        const double b_y = machine.b_y;
-        const double p_x = machine.p_x;
-        const double p_y = machine.p_y;
-
-        const double press_a =
-            (p_x * b_y - p_y * b_x) / (a_x * b_y - a_y * b_x);
-        const double press_b = (p_x - a_x * press_a) / b_x;
-
-        if (std::round(press_a) == press_a && std::round(press_b) == press_b) {
-            const uint64_t price_t = press_a * 3 + press_b * 1;
-            price = price_t;
-        }
-
-        res += price;
+std::vector<std::string> makeGrid(const int wide, const int tall) {
+    std::vector<std::string> ret;
+    for (int i{}; i < tall; ++i) {
+        const std::string ret_t(wide, '.');
+        ret.push_back(ret_t);
     }
+    return ret;
+}
 
-    return res;
+void makeMove(Token& token, const int wide, const int tall) {
+    int& pos_x = token.pos_x;
+    int& pos_y = token.pos_y;
+    const int& v_x = token.v_x;
+    const int& v_y = token.v_y;
+
+    pos_x = (pos_x + v_x) % wide;
+    if (pos_x < 0) pos_x = wide + pos_x;
+
+    pos_y = (pos_y + v_y) % tall;
+    if (pos_y < 0) pos_y = tall + pos_y;
+}
+
+void addToGrid(std::vector<std::string>& grid, const Token& token) {
+    char nbr = '1';
+    if (grid.at(token.pos_y)[token.pos_x] != '.') {
+        const int orig = (grid.at(token.pos_y)[token.pos_x] - '0');
+        if (orig == 9) std::cout << "Orig is 9!!" << std::endl;
+        const int nbr_t = orig + 1;
+        nbr = '0' + nbr_t;
+    }
+    grid.at(token.pos_y)[token.pos_x] = nbr;
+}
+
+void printGrid(const std::vector<std::string>& grid) {
+    for (size_t i{}; i < grid.size(); ++i) {
+        std::cout << grid.at(i) << std::endl;
+    }
+    std::cout << std::endl;
+}
+
+uint64_t getResult(const std::string& str) {
+    const int wide{101};
+    const int tall{103};
+    auto data = parseData(str);
+    // printVec(data);
+    uint64_t moves{1};
+
+    for (; moves < 10000000000; ++moves) {
+        std::set<std::pair<int, int>> positions;
+        for (auto& d : data) {
+            makeMove(d, wide, tall);
+            positions.insert({d.pos_x, d.pos_y});
+        }
+        if (positions.size() == data.size()) break;
+    }
+    auto grid = makeGrid(wide, tall);
+    for (auto& d : data) {
+        addToGrid(grid, d);
+    }
+    printGrid(grid);
+
+    return moves;
 }
 
 int main(int args, char* argv[]) {
