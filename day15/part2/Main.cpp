@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <cstdint>
 #include <iostream>
@@ -9,102 +10,207 @@
 
 #include "common.hpp"
 
-struct Token {
-    int pos_x{};
-    int pos_y{};
-    int v_x{};
-    int v_y{};
-};
-
-void printVec(const std::vector<Token>& args) {
-    for (auto& arg : args) {
-        std::cout << arg.pos_x << ", ";
-        std::cout << arg.pos_y << ", ";
-        std::cout << arg.v_x << ", ";
-        std::cout << arg.v_y << std::endl;
-    };
-}
-
-std::vector<Token> parseData(const std::string& str) {
-    std::vector<Token> ret;
-    std::regex re(R"(p=(\d+),(\d+) v=(-?\d+),(-?\d+))");
-    std::string temp = str;
-    std::smatch sm;
-
-    while (std::regex_search(temp, sm, re)) {
-        Token token;
-        token.pos_x = std::stoi(sm[1].str());
-        token.pos_y = std::stoi(sm[2].str());
-        token.v_x = std::stoi(sm[3].str());
-        token.v_y = std::stoi(sm[4].str());
-        ret.push_back(token);
-        temp = sm.suffix();
-    }
-    return ret;
-}
-
-std::vector<std::string> makeGrid(const int wide, const int tall) {
+std::vector<std::string> parseWarehouse(const std::string& str) {
+    std::regex re(R"((#.*#))");
     std::vector<std::string> ret;
-    for (int i{}; i < tall; ++i) {
-        const std::string ret_t(wide, '.');
-        ret.push_back(ret_t);
+    std::smatch sm;
+    std::string tmp = str;
+
+    while (std::regex_search(tmp, sm, re)) {
+        ret.push_back(sm[1].str());
+        tmp = sm.suffix();
     }
+
     return ret;
 }
 
-void makeMove(Token& token, const int wide, const int tall) {
-    int& pos_x = token.pos_x;
-    int& pos_y = token.pos_y;
-    const int& v_x = token.v_x;
-    const int& v_y = token.v_y;
+std::string parseInstructions(const std::string& str) {
+    std::regex re(R"(([<v>^]))");
+    std::string ret;
+    std::smatch sm;
+    std::string tmp = str;
 
-    pos_x = (pos_x + v_x) % wide;
-    if (pos_x < 0) pos_x = wide + pos_x;
+    while (std::regex_search(tmp, sm, re)) {
+        ret += sm[1].str();
+        tmp = sm.suffix();
+    }
 
-    pos_y = (pos_y + v_y) % tall;
-    if (pos_y < 0) pos_y = tall + pos_y;
+    return ret;
 }
 
-void addToGrid(std::vector<std::string>& grid, const Token& token) {
-    char nbr = '1';
-    if (grid.at(token.pos_y)[token.pos_x] != '.') {
-        const int orig = (grid.at(token.pos_y)[token.pos_x] - '0');
-        if (orig == 9) std::cout << "Orig is 9!!" << std::endl;
-        const int nbr_t = orig + 1;
-        nbr = '0' + nbr_t;
+std::pair<size_t, size_t> getPos(const std::vector<std::string>& vec) {
+    for (size_t y{}; y < vec.size(); ++y) {
+        const auto str = vec.at(y);
+        const size_t pos = str.find('@');
+        if (pos != std::string::npos) {
+            return {pos, y};
+        }
     }
-    grid.at(token.pos_y)[token.pos_x] = nbr;
+    abort();
 }
 
-void printGrid(const std::vector<std::string>& grid) {
-    for (size_t i{}; i < grid.size(); ++i) {
-        std::cout << grid.at(i) << std::endl;
+bool canMove(const std::vector<std::string>& vec, const char dir,
+             const std::pair<size_t, size_t> pos) {
+    if (vec.at(pos.second)[pos.first] == '.') return true;
+    if (vec.at(pos.second)[pos.first] == '#') return false;
+    if (dir == '^') {
+        const size_t pos1_x =
+            vec.at(pos.second)[pos.first] == '[' ? pos.first : pos.first - 1;
+        const std::pair<size_t, size_t> pos1{pos1_x, pos.second - 1};
+        const std::pair<size_t, size_t> pos2{pos1_x + 1, pos.second - 1};
+        return canMove(vec, dir, pos1) && canMove(vec, dir, pos2);
+    } else {
+        const size_t pos1_x =
+            vec.at(pos.second)[pos.first] == '[' ? pos.first : pos.first - 1;
+        const std::pair<size_t, size_t> pos1{pos1_x, pos.second + 1};
+        const std::pair<size_t, size_t> pos2{pos1_x + 1, pos.second + 1};
+        return canMove(vec, dir, pos1) && canMove(vec, dir, pos2);
     }
-    std::cout << std::endl;
+
+    return false;
+}
+
+void moveUp(std::vector<std::string>& vec,
+            const std::pair<size_t, size_t> pos) {
+    if (vec.at(pos.second)[pos.first] == '.') {
+        std::swap(vec.at(pos.second)[pos.first],
+                  vec.at(pos.second + 1)[pos.first]);
+    } else if ((vec.at(pos.second)[pos.first] == '[') ||
+               (vec.at(pos.second)[pos.first] == ']')) {
+        const size_t pos1_x =
+            vec.at(pos.second)[pos.first] == '[' ? pos.first : pos.first - 1;
+        const std::pair<size_t, size_t> pos1{pos1_x, pos.second - 1};
+        const std::pair<size_t, size_t> pos2{pos1_x + 1, pos.second - 1};
+        moveUp(vec, pos1);
+        moveUp(vec, pos2);
+        std::swap(vec.at(pos.second)[pos.first],
+                  vec.at(pos.second + 1)[pos.first]);
+    } else
+        assert(0);
+}
+
+void moveDown(std::vector<std::string>& vec,
+              const std::pair<size_t, size_t> pos) {
+    if (vec.at(pos.second)[pos.first] == '.') {
+        std::swap(vec.at(pos.second)[pos.first],
+                  vec.at(pos.second - 1)[pos.first]);
+    } else if ((vec.at(pos.second)[pos.first] == '[') ||
+               (vec.at(pos.second)[pos.first] == ']')) {
+        const size_t pos1_x =
+            vec.at(pos.second)[pos.first] == '[' ? pos.first : pos.first - 1;
+        const std::pair<size_t, size_t> pos1{pos1_x, pos.second + 1};
+        const std::pair<size_t, size_t> pos2{pos1_x + 1, pos.second + 1};
+        moveDown(vec, pos1);
+        moveDown(vec, pos2);
+        std::swap(vec.at(pos.second)[pos.first],
+                  vec.at(pos.second - 1)[pos.first]);
+    } else
+        assert(0);
+}
+
+void makeMove(std::vector<std::string>& vec, const char dir) {
+    const auto curPos = getPos(vec);
+    // std::cout << vec.at(curPos.second)[curPos.first] << "(" << curPos.first
+    //           << ", " << curPos.second << ")" << " dir: " << dir <<
+    //           std::endl;
+
+    switch (dir) {
+        case '^':  // up
+        {
+            if (canMove(vec, dir, {curPos.first, curPos.second - 1})) {
+                moveUp(vec, {curPos.first, curPos.second - 1});
+            }
+            break;
+        }
+
+        case '>':  // right
+        {
+            const size_t size = vec.at(0).size();
+            for (size_t newPos = curPos.first + 1; newPos < size; ++newPos) {
+                if (vec.at(curPos.second)[newPos] == '#') break;
+                if (vec.at(curPos.second)[newPos] == '.') {
+                    for (size_t i{newPos}; curPos.first < i; --i) {
+                        std::swap(vec.at(curPos.second)[i],
+                                  vec.at(curPos.second)[i - 1]);
+                    }
+                    break;
+                }
+            }
+            break;
+        }
+        case 'v':  // down
+        {
+            if (canMove(vec, dir, {curPos.first, curPos.second + 1})) {
+                moveDown(vec, {curPos.first, curPos.second + 1});
+            }
+            break;
+        }
+        case '<':  // left
+        {
+            for (size_t newPos = curPos.first - 1; 0 < newPos; --newPos) {
+                if (vec.at(curPos.second)[newPos] == '#') break;
+                if (vec.at(curPos.second)[newPos] == '.') {
+                    for (size_t i{newPos}; i < curPos.first; ++i) {
+                        std::swap(vec.at(curPos.second)[i],
+                                  vec.at(curPos.second)[i + 1]);
+                    }
+                    break;
+                }
+            }
+            break;
+        }
+        default:
+            abort();
+    }
+}
+
+uint64_t calculateGpsCoornidate(const std::vector<std::string>& vec) {
+    uint64_t res{};
+    for (size_t y{1}; y < vec.size(); ++y) {
+        const auto& str = vec.at(y);
+        for (size_t x{}; x < str.size() - 1; ++x) {
+            if ((str[x] == '[') && (str[x + 1] == ']')) {
+                res += 100 * y + x;
+            }
+        }
+    }
+    return res;
+}
+
+void mod(std::vector<std::string>& vec) {
+    for (size_t i{}; i < vec.size(); ++i) {
+        auto& str = vec.at(i);
+        std::string temp;
+        for (size_t j{}; j < str.size(); ++j) {
+            if (str[j] == '#')
+                temp.append(2, '#');
+            else if (str[j] == '.')
+                temp.append(2, '.');
+            else if (str[j] == 'O')
+                temp.append("[]");
+            else if (str[j] == '@')
+                temp.append("@.");
+        }
+        str = temp;
+    }
 }
 
 uint64_t getResult(const std::string& str) {
-    const int wide{101};
-    const int tall{103};
-    auto data = parseData(str);
-    // printVec(data);
-    uint64_t moves{1};
+    auto wareHouse = parseWarehouse(str);
+    const auto instructions = parseInstructions(str);
 
-    for (; moves < 10000000000; ++moves) {
-        std::set<std::pair<int, int>> positions;
-        for (auto& d : data) {
-            makeMove(d, wide, tall);
-            positions.insert({d.pos_x, d.pos_y});
-        }
-        if (positions.size() == data.size()) break;
-    }
-    auto grid = makeGrid(wide, tall);
-    for (auto& d : data) {
-        addToGrid(grid, d);
-    }
-    printGrid(grid);
+    mod(wareHouse);
 
-    return moves;
+    // std::cout << std::endl;
+    // common::printVecStr(wareHouse);
+    // std::cout << instructions << std::endl;
+
+    for (size_t i{}; i < instructions.size(); ++i) {
+        makeMove(wareHouse, instructions.at(i));
+        // common::printVecStr(wareHouse);
+    }
+
+    return calculateGpsCoornidate(wareHouse);
 }
 
 int main(int args, char* argv[]) {
