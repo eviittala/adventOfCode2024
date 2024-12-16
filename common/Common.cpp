@@ -37,6 +37,13 @@ void printVec(const std::vector<uint64_t>& vec) {
     std::cout << std::endl;
 }
 
+void printVecStr(const std::vector<std::string>& vec) {
+    for (auto& data : vec) {
+        std::cout << data << std::endl;
+    }
+    std::cout << std::endl;
+}
+
 void printVecChar(const std::vector<char>& vec) {
     for (auto& data : vec) {
         std::cout << data << " ";
