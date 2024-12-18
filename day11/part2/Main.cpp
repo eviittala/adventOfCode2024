@@ -6,7 +6,7 @@
 #include <set>
 #include <unordered_map>
 
-#include "common.hpp"
+#include "Common.hpp"
 
 namespace {
 constexpr uint64_t nbrOfBlinks{75};

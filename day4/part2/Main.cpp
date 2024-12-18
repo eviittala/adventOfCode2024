@@ -2,7 +2,7 @@
 #include <iostream>
 #include <regex>
 
-#include "common.hpp"
+#include "Common.hpp"
 
 std::vector<int> makeDirs(const int len) {
     return {-len + 1, len - 1, len + 1, -len - 1};

@@ -4,7 +4,7 @@
 #include <regex>
 #include <set>
 
-#include "common.hpp"
+#include "Common.hpp"
 
 uint64_t calculate(const uint64_t var1, const uint64_t var2, const char c) {
     if (c == '+') return var1 + var2;

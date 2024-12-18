@@ -5,7 +5,7 @@
 #include <regex>
 #include <set>
 
-#include "common.hpp"
+#include "Common.hpp"
 
 void printVec(const std::vector<uint64_t>& vec) {
     for (auto& data : vec) {

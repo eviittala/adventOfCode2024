@@ -8,7 +8,7 @@
 #include <set>
 #include <unordered_map>
 
-#include "common.hpp"
+#include "Common.hpp"
 
 std::vector<std::string> parseWarehouse(const std::string& str) {
     std::regex re(R"((#.*#))");

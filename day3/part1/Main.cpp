@@ -2,7 +2,7 @@
 #include <iostream>
 #include <regex>
 
-#include "common.hpp"
+#include "Common.hpp"
 
 uint32_t getResult(const std::string& str) {
     std::string tmp = str;

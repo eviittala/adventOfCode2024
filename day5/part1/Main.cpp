@@ -2,7 +2,7 @@
 #include <iostream>
 #include <regex>
 
-#include "common.hpp"
+#include "Common.hpp"
 
 std::vector<std::pair<int, int>> orders;
 std::vector<std::vector<int>> updates;

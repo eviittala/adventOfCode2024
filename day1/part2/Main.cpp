@@ -3,7 +3,7 @@
 #include <iostream>
 #include <regex>
 
-#include "common.hpp"
+#include "Common.hpp"
 
 std::vector<int32_t> vec1;
 std::vector<int32_t> vec2;

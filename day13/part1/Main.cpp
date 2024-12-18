@@ -6,7 +6,7 @@
 #include <set>
 #include <unordered_map>
 
-#include "common.hpp"
+#include "Common.hpp"
 
 struct Token {
     int a_x{};

@@ -6,7 +6,7 @@
 #include <set>
 #include <unordered_map>
 
-#include "common.hpp"
+#include "Common.hpp"
 
 bool evenNbrOfDigits(const uint64_t val) {
     return (std::to_string(val).size() % 2) == 0;

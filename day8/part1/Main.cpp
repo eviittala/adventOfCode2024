@@ -4,7 +4,7 @@
 #include <regex>
 #include <set>
 
-#include "common.hpp"
+#include "Common.hpp"
 
 bool isValidNode(const int node, const int pos1, const int pos2,
                  const size_t lineSize) {
