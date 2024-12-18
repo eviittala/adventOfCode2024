@@ -10,7 +10,18 @@
 
 #include "Common.hpp"
 
-std::vector<std::string> parseWarehouse(const std::string& str) {
+struct Point {
+    bool visited{};
+    uint64_t steps{UINT64_MAX};
+    uint64_t tiles{UINT64_MAX};
+    std::pair<int, int> dir{};
+    std::vector<std::pair<int, int>> pre{};
+};
+
+std::map<std::pair<int, int>, Point> points;
+size_t line_size{};
+
+std::vector<std::string> parseData(const std::string& str) {
     std::regex re(R"((#.*#))");
     std::vector<std::string> ret;
     std::smatch sm;
@@ -24,193 +35,126 @@ std::vector<std::string> parseWarehouse(const std::string& str) {
     return ret;
 }
 
-std::string parseInstructions(const std::string& str) {
-    std::regex re(R"(([<v>^]))");
-    std::string ret;
-    std::smatch sm;
-    std::string tmp = str;
-
-    while (std::regex_search(tmp, sm, re)) {
-        ret += sm[1].str();
-        tmp = sm.suffix();
-    }
-
-    return ret;
-}
-
-std::pair<size_t, size_t> getPos(const std::vector<std::string>& vec) {
+std::pair<size_t, size_t> getStart(const std::vector<std::string>& vec) {
     for (size_t y{}; y < vec.size(); ++y) {
-        const auto str = vec.at(y);
-        const size_t pos = str.find('@');
+        const size_t pos = vec.at(y).find('S');
         if (pos != std::string::npos) {
             return {pos, y};
         }
     }
-    abort();
+    assert(0);
+    return {};
 }
 
-bool canMove(const std::vector<std::string>& vec, const char dir,
-             const std::pair<size_t, size_t> pos) {
-    if (vec.at(pos.second)[pos.first] == '.') return true;
-    if (vec.at(pos.second)[pos.first] == '#') return false;
-    if (dir == '^') {
-        const size_t pos1_x =
-            vec.at(pos.second)[pos.first] == '[' ? pos.first : pos.first - 1;
-        const std::pair<size_t, size_t> pos1{pos1_x, pos.second - 1};
-        const std::pair<size_t, size_t> pos2{pos1_x + 1, pos.second - 1};
-        return canMove(vec, dir, pos1) && canMove(vec, dir, pos2);
-    } else {
-        const size_t pos1_x =
-            vec.at(pos.second)[pos.first] == '[' ? pos.first : pos.first - 1;
-        const std::pair<size_t, size_t> pos1{pos1_x, pos.second + 1};
-        const std::pair<size_t, size_t> pos2{pos1_x + 1, pos.second + 1};
-        return canMove(vec, dir, pos1) && canMove(vec, dir, pos2);
-    }
-
-    return false;
+std::pair<int, int> plus(std::pair<int, int> a, std::pair<int, int> b) {
+    return {a.first + b.first, a.second + b.second};
 }
 
-void moveUp(std::vector<std::string>& vec,
-            const std::pair<size_t, size_t> pos) {
-    if (vec.at(pos.second)[pos.first] == '.') {
-        std::swap(vec.at(pos.second)[pos.first],
-                  vec.at(pos.second + 1)[pos.first]);
-    } else if ((vec.at(pos.second)[pos.first] == '[') ||
-               (vec.at(pos.second)[pos.first] == ']')) {
-        const size_t pos1_x =
-            vec.at(pos.second)[pos.first] == '[' ? pos.first : pos.first - 1;
-        const std::pair<size_t, size_t> pos1{pos1_x, pos.second - 1};
-        const std::pair<size_t, size_t> pos2{pos1_x + 1, pos.second - 1};
-        moveUp(vec, pos1);
-        moveUp(vec, pos2);
-        std::swap(vec.at(pos.second)[pos.first],
-                  vec.at(pos.second + 1)[pos.first]);
-    } else
-        assert(0);
-}
+std::pair<int, int> getSmallest() {
+    uint64_t steps{INT32_MAX};
+    std::pair<int, int> ret;
 
-void moveDown(std::vector<std::string>& vec,
-              const std::pair<size_t, size_t> pos) {
-    if (vec.at(pos.second)[pos.first] == '.') {
-        std::swap(vec.at(pos.second)[pos.first],
-                  vec.at(pos.second - 1)[pos.first]);
-    } else if ((vec.at(pos.second)[pos.first] == '[') ||
-               (vec.at(pos.second)[pos.first] == ']')) {
-        const size_t pos1_x =
-            vec.at(pos.second)[pos.first] == '[' ? pos.first : pos.first - 1;
-        const std::pair<size_t, size_t> pos1{pos1_x, pos.second + 1};
-        const std::pair<size_t, size_t> pos2{pos1_x + 1, pos.second + 1};
-        moveDown(vec, pos1);
-        moveDown(vec, pos2);
-        std::swap(vec.at(pos.second)[pos.first],
-                  vec.at(pos.second - 1)[pos.first]);
-    } else
-        assert(0);
-}
-
-void makeMove(std::vector<std::string>& vec, const char dir) {
-    const auto curPos = getPos(vec);
-    // std::cout << vec.at(curPos.second)[curPos.first] << "(" << curPos.first
-    //           << ", " << curPos.second << ")" << " dir: " << dir <<
-    //           std::endl;
-
-    switch (dir) {
-        case '^':  // up
-        {
-            if (canMove(vec, dir, {curPos.first, curPos.second - 1})) {
-                moveUp(vec, {curPos.first, curPos.second - 1});
-            }
-            break;
-        }
-
-        case '>':  // right
-        {
-            const size_t size = vec.at(0).size();
-            for (size_t newPos = curPos.first + 1; newPos < size; ++newPos) {
-                if (vec.at(curPos.second)[newPos] == '#') break;
-                if (vec.at(curPos.second)[newPos] == '.') {
-                    for (size_t i{newPos}; curPos.first < i; --i) {
-                        std::swap(vec.at(curPos.second)[i],
-                                  vec.at(curPos.second)[i - 1]);
-                    }
-                    break;
-                }
-            }
-            break;
-        }
-        case 'v':  // down
-        {
-            if (canMove(vec, dir, {curPos.first, curPos.second + 1})) {
-                moveDown(vec, {curPos.first, curPos.second + 1});
-            }
-            break;
-        }
-        case '<':  // left
-        {
-            for (size_t newPos = curPos.first - 1; 0 < newPos; --newPos) {
-                if (vec.at(curPos.second)[newPos] == '#') break;
-                if (vec.at(curPos.second)[newPos] == '.') {
-                    for (size_t i{newPos}; i < curPos.first; ++i) {
-                        std::swap(vec.at(curPos.second)[i],
-                                  vec.at(curPos.second)[i + 1]);
-                    }
-                    break;
-                }
-            }
-            break;
-        }
-        default:
-            abort();
-    }
-}
-
-uint64_t calculateGpsCoornidate(const std::vector<std::string>& vec) {
-    uint64_t res{};
-    for (size_t y{1}; y < vec.size(); ++y) {
-        const auto& str = vec.at(y);
-        for (size_t x{}; x < str.size() - 1; ++x) {
-            if ((str[x] == '[') && (str[x + 1] == ']')) {
-                res += 100 * y + x;
-            }
+    for (auto& [pos, p] : points) {
+        if (!p.visited && p.steps < steps) {
+            steps = p.steps;
+            ret = pos;
         }
     }
-    return res;
+    return ret;
 }
 
-void mod(std::vector<std::string>& vec) {
-    for (size_t i{}; i < vec.size(); ++i) {
-        auto& str = vec.at(i);
-        std::string temp;
-        for (size_t j{}; j < str.size(); ++j) {
-            if (str[j] == '#')
-                temp.append(2, '#');
-            else if (str[j] == '.')
-                temp.append(2, '.');
-            else if (str[j] == 'O')
-                temp.append("[]");
-            else if (str[j] == '@')
-                temp.append("@.");
-        }
-        str = temp;
+std::set<std::pair<int, int>> getTiles(const std::vector<std::string>& vec,
+                                       const std::pair<int, int> cur) {
+    auto& p = points.at(cur);
+    std::set<std::pair<int, int>> ret{cur};
+    if (vec.at(cur.second)[cur.first] == 'S') return ret;
+
+    for (const auto& pre : p.pre) {
+        const auto pre_tiles = getTiles(vec, pre);
+        ret.insert(std::begin(pre_tiles), std::end(pre_tiles));
+    }
+    return ret;
+}
+
+void fillMapAndPrint(const std::vector<std::string>& vec,
+                     std::pair<int, int> cur) {
+    auto temp = vec;
+    const auto tiles = getTiles(vec, cur);
+
+    for (const auto& tile : tiles) {
+        temp.at(tile.second)[tile.first] = 'O';
+    }
+
+    common::printVecStr(temp);
+}
+
+uint64_t getNextSteps(const std::pair<int, int> c_dir,
+                      const std::pair<int, int> n_dir) {
+    if (c_dir == n_dir) {
+        return 1;
+    }
+    return 1001;
+}
+
+std::vector<std::pair<int, int>> getDirs(const std::pair<int, int> cur) {
+    const std::pair<int, int> up{0, -1};
+    const std::pair<int, int> right{1, 0};
+    const std::pair<int, int> down{0, 1};
+    const std::pair<int, int> left{-1, 0};
+
+    if (cur == up) {
+        return {left, up, right};
+    }
+    if (cur == right) {
+        return {up, right, down};
+    }
+    if (cur == down) {
+        return {left, down, right};
+    }
+    if (cur == left) {
+        return {left, up, down};
     }
 }
 
 uint64_t getResult(const std::string& str) {
-    auto wareHouse = parseWarehouse(str);
-    const auto instructions = parseInstructions(str);
+    auto data = parseData(str);
+    line_size = data.at(0).size();
+    // common::printVecStr(data);
+    auto cur = getStart(data);
+    auto& point = points[cur];
+    point.visited = false;
+    // point.pre = std::pair(INT32_MAX, INT32_MAX);
+    point.steps = 0;
+    point.tiles = 1;
+    point.dir = std::pair(1, 0);
 
-    mod(wareHouse);
+    while (data.at(cur.second)[cur.first] != 'E') {
+        auto& p = points.at(cur);
 
-    // std::cout << std::endl;
-    // common::printVecStr(wareHouse);
-    // std::cout << instructions << std::endl;
-
-    for (size_t i{}; i < instructions.size(); ++i) {
-        makeMove(wareHouse, instructions.at(i));
-        // common::printVecStr(wareHouse);
+        if (!p.visited) {
+            p.visited = true;
+            const auto tiles = p.tiles;
+            for (auto n_dir : getDirs(p.dir)) {
+                auto next = plus(cur, n_dir);
+                if (data.at(next.second)[next.first] == '#') continue;
+                auto& n_point = points[next];
+                const uint64_t n_steps = p.steps + getNextSteps(p.dir, n_dir);
+                if (n_steps <= n_point.steps) {
+                    n_point.steps = n_steps;
+                    n_point.pre.push_back(cur);
+                    n_point.dir = n_dir;
+                    n_point.tiles = tiles + 1;
+                } else if (tiles <= n_point.tiles) {
+                    n_point.pre.push_back(cur);
+                }
+            }
+        }
+        cur = getSmallest();
     }
-
-    return calculateGpsCoornidate(wareHouse);
+    // std::cout << "Returning: " << data.at(cur.second)[cur.first] <<
+    // std::endl;
+    // fillMapAndPrint(data, cur);
+    return getTiles(data, cur).size();
 }
 
 int main(int args, char* argv[]) {
@@ -218,3 +162,4 @@ int main(int args, char* argv[]) {
     std::cout << "Result: " << getResult(str) << std::endl;
     return 0;
 }
+// 130536
