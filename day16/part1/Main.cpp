@@ -109,7 +109,7 @@ uint64_t getResult(const std::string& str) {
             p.visited = true;
             for (auto n_dir : getDirs()) {
                 auto next = plus(cur, n_dir);
-                if (data.at(cur.second)[cur.first] == '#') continue;
+                if (data.at(next.second)[next.first] == '#') continue;
                 const auto c_dir = p.dir;
                 auto& n_point = points[next];
                 const uint64_t n_steps = p.steps + getNextSteps(c_dir, n_dir);
