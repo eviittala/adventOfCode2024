@@ -16,7 +16,6 @@ struct Point {
     int y{};
     uint64_t steps{UINT64_MAX};
     std::pair<int, int> dir{};
-    // std::vector<std::pair<int, int>> pre;
 
     friend bool operator<(const Point& l, const Point& r) {
         return l.steps > r.steps;
@@ -59,15 +58,24 @@ uint64_t getResult(const std::string& str) {
 
     std::priority_queue<Point> pq;
     pq.push(point);
-    std::set<std::tuple<int, int, int, int>> seen;
-    seen.insert({startPos.first, startPos.second, 0, 1});
+    std::map<std::tuple<int, int, int, int>, uint64_t> lowest_steps;
+    std::map<std::tuple<int, int, int, int>, std::vector<Point>> backtrace;
+    uint64_t best_steps{UINT64_MAX};
+    std::set<std::tuple<int, int, int, int>> end_states;
 
     while (0 < pq.size()) {
         auto p = pq.top();
         pq.pop();
-        seen.insert({p.x, p.y, p.dir.first, p.dir.second});
+        if (lowest_steps.contains({p.x, p.y, p.dir.first, p.dir.second})) {
+            if (lowest_steps.at({p.x, p.y, p.dir.first, p.dir.second}) <
+                p.steps)
+                continue;
+        }
+
         if (data.at(p.y)[p.x] == 'E') {
-            return p.steps - 1000;
+            if (p.steps > best_steps) break;
+            best_steps = p.steps;
+            end_states.insert({p.x, p.y, p.dir.first, p.dir.second});
         }
         for (auto [new_steps, nx, ny, ndr, ndc] :
              {std::tuple{p.steps + 1, p.x + p.dir.first, p.y + p.dir.second,
@@ -77,7 +85,19 @@ uint64_t getResult(const std::string& str) {
               {std::tuple{p.steps + 1000, p.x, p.y, -p.dir.second,
                           p.dir.first}}}) {
             if (data.at(ny)[nx] == '#') continue;
-            if (seen.contains({nx, ny, ndr, ndc})) continue;
+            uint64_t lowest{UINT64_MAX};
+            if (lowest_steps.contains({nx, ny, ndr, ndc})) {
+                lowest = lowest_steps.at({nx, ny, ndr, ndc});
+            }
+
+            if (new_steps > lowest) continue;
+            if (new_steps < lowest) {
+                backtrace[{nx, ny, ndr, ndc}] = {};
+                lowest_steps[{nx, ny, ndr, ndc}] = new_steps;
+            }
+            backtrace[{nx, ny, ndr, ndc}].push_back(
+                Point{p.x, p.y, 0, {p.dir.first, p.dir.second}});
+
             Point p_t;
             p_t.x = nx;
             p_t.y = ny;
@@ -86,8 +106,33 @@ uint64_t getResult(const std::string& str) {
             pq.push(p_t);
         }
     }
+    std::deque<std::tuple<int, int, int, int>> states{std::begin(end_states),
+                                                      std::end(end_states)};
+    std::set<std::tuple<int, int, int, int>> seen{std::begin(end_states),
+                                                  std::end(end_states)};
 
-    return {};
+    while (0 < states.size()) {
+        auto key = states.front();
+        states.pop_front();
+        if (backtrace.contains(key)) {
+            for (auto last : backtrace.at(key)) {
+                if (seen.contains(
+                        {last.x, last.y, last.dir.first, last.dir.second}))
+                    continue;
+                seen.insert({last.x, last.y, last.dir.first, last.dir.second});
+                states.push_back(
+                    {last.x, last.y, last.dir.first, last.dir.second});
+            }
+        }
+    }
+
+    std::set<std::tuple<int, int>> seen2;
+
+    for (const auto& [x, y, ndr, ndc] : seen) {
+        seen2.insert({x, y});
+    }
+
+    return seen2.size();
 }
 
 int main(int args, char* argv[]) {
