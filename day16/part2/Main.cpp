@@ -140,5 +140,3 @@ int main(int args, char* argv[]) {
     std::cout << "Result: " << getResult(str) << std::endl;
     return 0;
 }
-// 584  // too low
-// 585  // too low
