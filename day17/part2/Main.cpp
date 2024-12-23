@@ -4,135 +4,190 @@
 #include <cstdint>
 #include <iostream>
 #include <numeric>
-#include <queue>
 #include <regex>
 #include <set>
 #include <unordered_map>
 
 #include "Common.hpp"
 
-struct Point {
-    int x{};
-    int y{};
-    uint64_t steps{UINT64_MAX};
-    std::pair<int, int> dir{};
-
-    friend bool operator<(const Point& l, const Point& r) {
-        return l.steps > r.steps;
-    }
+struct Registers {
+    uint64_t A{};
+    uint64_t B{};
+    uint64_t C{};
 };
 
-std::vector<std::string> parseData(const std::string& str) {
-    std::regex re(R"((#.*#))");
-    std::vector<std::string> ret;
+Registers parseRegisters(const std::string& str) {
+    std::regex reA(R"(Register A:\s(\d+))");
+    std::regex reB(R"(Register B:\s(\d+))");
+    std::regex reC(R"(Register C:\s(\d+))");
     std::smatch sm;
-    std::string tmp = str;
+    Registers ret;
 
-    while (std::regex_search(tmp, sm, re)) {
-        ret.push_back(sm[1].str());
-        tmp = sm.suffix();
+    if (std::regex_search(str, sm, reA)) {
+        ret.A = std::stoll(sm[1].str());
+    }
+
+    if (std::regex_search(str, sm, reB)) {
+        ret.B = std::stoll(sm[1].str());
+    }
+
+    if (std::regex_search(str, sm, reC)) {
+        ret.C = std::stoll(sm[1].str());
     }
 
     return ret;
 }
 
-std::pair<int, int> getStart(const std::vector<std::string>& vec) {
-    for (size_t y{}; y < vec.size(); ++y) {
-        const size_t pos = vec.at(y).find('S');
-        if (pos != std::string::npos) {
-            return {pos, y};
+std::vector<uint64_t> parseProgram(const std::string& str) {
+    std::regex re(R"(Program:\s(.*))");
+    std::smatch sm;
+    std::vector<uint64_t> ret;
+
+    if (std::regex_search(str, sm, re)) {
+        // std::cout << sm[1].str() << std::endl;
+        std::string temp = sm[1].str();
+        while (std::regex_search(temp, sm, std::regex(R"((\d+))"))) {
+            ret.push_back(std::stoll(sm[1].str()));
+            temp = sm.suffix();
         }
     }
-    assert(0);
+
+    return ret;
+}
+
+uint64_t& getOperand(Registers& regs, uint64_t& combo) {
+    if (combo < 4) return combo;
+    switch (combo) {
+        case 4:
+            return regs.A;
+        case 5:
+            return regs.B;
+        case 6:
+            return regs.B;
+    }
+    return combo;
+}
+// 2,4 : 1,2 : 7,5 : 0,3 : 1,7 : 4,1 : 5,5 : 3,0
+// 00  : 02  : 04  : 06  : 08  : 0A  : 0C  : 0E
+// 00: B <= A % 8
+// 02: B <= B ^ 2
+// 04: C <= A / 2^B
+// 06: A <= A / 2^3
+// 08: B <= B ^ 7
+// 0A: B <= B ^ C
+// 0C: out <= B % 8
+// 0E: jnz <= if A zero
+
+std::vector<uint64_t> doCmd(const uint64_t opcode, uint64_t combo,
+                            Registers& regs, const uint64_t val) {
+    switch (opcode) {
+        case 0: {
+            const uint64_t num = regs.A;
+            regs.A = num * std::pow(2, getOperand(regs, combo));
+        } break;
+        case 1: {
+            regs.B |= combo;
+        } break;
+        case 2: {
+            regs.B = getOperand(regs, combo) << 3;
+        } break;
+        case 3: {
+            // if (regs.A != 0) {
+            //     // pc = combo;
+            //     return {};
+            // }
+        } break;
+        case 4: {
+            regs.C = regs.B | regs.C;
+        } break;
+        case 5: {
+            // TODO eero
+            uint64_t& operand = getOperand(regs, combo);
+            operand += val;
+        } break;
+        case 6: {
+            const uint64_t num = regs.A;
+            regs.B = num * std::pow(2, getOperand(regs, combo));
+        } break;
+        case 7: {
+            const uint64_t num = regs.A;
+            regs.C = num * std::pow(2, getOperand(regs, combo));
+        } break;
+    }
     return {};
 }
 
+void doCmdInverse(Registers& regs, std::vector<uint64_t>& prog,
+                  const int indx) {
+    if (indx < 0) return;
+    const uint64_t val = prog.at(indx);
+    for (int i = prog.size() - 2; 0 <= i; i -= 2) {
+        const uint64_t opcode = prog[i];
+        const uint64_t combo = prog[i + 1];
+        doCmd(opcode, combo, regs, val);
+        //        if (opcode == 0) {
+        //            regs.A *= (std::pow(2, getOperand(regs, combo)));
+        //        }
+        //        if (opcode == 5) {
+        //            regs.A += val;
+        //        }
+        //        if (opcode == 1)
+        //        {
+        //
+        //        }
+
+        std::cout << "RegA: " << regs.A << ", " << "RegB: " << regs.B << ", "
+                  << "RegC: " << regs.C << ", " << indx << ", val: " << val
+                  << ", " << "opcode: " << opcode << " combo: " << combo
+                  << std::endl;
+
+        /*
+        uint64_t ret{};
+        for (auto it = std::rbegin(prog); it != std::rend(prog); ++it) {
+            if ((it + 1) != std::rend(prog))
+                ret = ret * 8 + *(it + 1);
+            else
+                ret *= 8;
+            std::cout << "Ret: " << ret << std::endl;
+        }
+        return ret;
+        */
+    }
+    doCmdInverse(regs, prog, indx - 1);
+}
+
 uint64_t getResult(const std::string& str) {
-    auto data = parseData(str);
-    auto startPos = getStart(data);
-    Point point;
-    point.x = startPos.first;
-    point.y = startPos.second;
-    point.steps = 0;
-    point.dir = {0, 1};
+    // auto regs = parseRegisters(str);
+    Registers regs;
+    auto prog = parseProgram(str);
 
-    std::priority_queue<Point> pq;
-    pq.push(point);
-    std::map<std::tuple<int, int, int, int>, uint64_t> lowest_steps;
-    std::map<std::tuple<int, int, int, int>, std::vector<Point>> backtrace;
-    uint64_t best_steps{UINT64_MAX};
-    std::set<std::tuple<int, int, int, int>> end_states;
+    // printf("Register A:%lu\nRegister B:%lu\nRegister C:%lu\n", regs.A,
+    // regs.B,
+    //        regs.C);
+    // std::cout << "Program: ";
+    // for (auto i : prog) {
+    //     std::cout << i << ", ";
+    // }
+    // std::cout << std::endl;
+    std::vector<uint64_t> output;
+    doCmdInverse(regs, prog, prog.size() - 1);
+    return regs.A;
 
-    while (0 < pq.size()) {
-        auto p = pq.top();
-        pq.pop();
-        if (lowest_steps.contains({p.x, p.y, p.dir.first, p.dir.second})) {
-            if (lowest_steps.at({p.x, p.y, p.dir.first, p.dir.second}) <
-                p.steps)
-                continue;
-        }
-
-        if (data.at(p.y)[p.x] == 'E') {
-            if (p.steps > best_steps) break;
-            best_steps = p.steps;
-            end_states.insert({p.x, p.y, p.dir.first, p.dir.second});
-        }
-        for (auto [new_steps, nx, ny, ndr, ndc] :
-             {std::tuple{p.steps + 1, p.x + p.dir.first, p.y + p.dir.second,
-                         p.dir.first, p.dir.second},
-              {std::tuple{p.steps + 1000, p.x, p.y, p.dir.second,
-                          -p.dir.first}},
-              {std::tuple{p.steps + 1000, p.x, p.y, -p.dir.second,
-                          p.dir.first}}}) {
-            if (data.at(ny)[nx] == '#') continue;
-            uint64_t lowest{UINT64_MAX};
-            if (lowest_steps.contains({nx, ny, ndr, ndc})) {
-                lowest = lowest_steps.at({nx, ny, ndr, ndc});
-            }
-
-            if (new_steps > lowest) continue;
-            if (new_steps < lowest) {
-                backtrace[{nx, ny, ndr, ndc}] = {};
-                lowest_steps[{nx, ny, ndr, ndc}] = new_steps;
-            }
-            backtrace[{nx, ny, ndr, ndc}].push_back(
-                Point{p.x, p.y, 0, {p.dir.first, p.dir.second}});
-
-            Point p_t;
-            p_t.x = nx;
-            p_t.y = ny;
-            p_t.dir = {ndr, ndc};
-            p_t.steps = new_steps;
-            pq.push(p_t);
-        }
-    }
-    std::deque<std::tuple<int, int, int, int>> states{std::begin(end_states),
-                                                      std::end(end_states)};
-    std::set<std::tuple<int, int, int, int>> seen{std::begin(end_states),
-                                                  std::end(end_states)};
-
-    while (0 < states.size()) {
-        auto key = states.front();
-        states.pop_front();
-        if (backtrace.contains(key)) {
-            for (auto last : backtrace.at(key)) {
-                if (seen.contains(
-                        {last.x, last.y, last.dir.first, last.dir.second}))
-                    continue;
-                seen.insert({last.x, last.y, last.dir.first, last.dir.second});
-                states.push_back(
-                    {last.x, last.y, last.dir.first, last.dir.second});
-            }
-        }
-    }
-
-    std::set<std::tuple<int, int>> seen2;
-
-    for (const auto& [x, y, ndr, ndc] : seen) {
-        seen2.insert({x, y});
-    }
-
-    return seen2.size();
+    //    while (pc < prog.size()) {
+    //        const uint64_t opcode = prog.at(pc);
+    //        const uint64_t combo = prog.at(pc + 1);
+    //        const auto res = doCmd(opcode, combo, regs, pc);
+    //        std::copy(std::begin(res), std::end(res),
+    //        std::back_inserter(output));
+    //    }
+    //
+    //    for (size_t i{}; i < output.size(); ++i) {
+    //        std::cout << output.at(i);
+    //        if ((i + 1) < output.size()) {
+    //            std::cout << ",";
+    //        }
+    //    }
+    //    std::cout << std::endl;
 }
 
 int main(int args, char* argv[]) {
