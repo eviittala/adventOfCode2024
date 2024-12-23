@@ -75,7 +75,7 @@ std::vector<uint64_t> doCmd(const uint64_t opcode, const uint64_t combo,
             regs.A = num / std::pow(2, getOperand());
         } break;
         case 1: {
-            regs.B ^= getOperand();
+            regs.B ^= combo;
         } break;
         case 2: {
             regs.B = getOperand() % 8;
