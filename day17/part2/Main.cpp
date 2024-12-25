@@ -55,139 +55,111 @@ std::vector<uint64_t> parseProgram(const std::string& str) {
     return ret;
 }
 
-uint64_t& getOperand(Registers& regs, uint64_t& combo) {
-    if (combo < 4) return combo;
-    switch (combo) {
-        case 4:
-            return regs.A;
-        case 5:
-            return regs.B;
-        case 6:
-            return regs.B;
-    }
-    return combo;
-}
-// 2,4 : 1,2 : 7,5 : 0,3 : 1,7 : 4,1 : 5,5 : 3,0
-// 00  : 02  : 04  : 06  : 08  : 0A  : 0C  : 0E
-// 00: B <= A % 8
-// 02: B <= B ^ 2
-// 04: C <= A / 2^B
-// 06: A <= A / 2^3
-// 08: B <= B ^ 7
-// 0A: B <= B ^ C
-// 0C: out <= B % 8
-// 0E: jnz <= if A zero
-
-std::vector<uint64_t> doCmd(const uint64_t opcode, uint64_t combo,
-                            Registers& regs, const uint64_t val) {
+void doCmd(const uint64_t opcode, const uint64_t combo, Registers& regs,
+           size_t& pc, auto& vec) {
+    auto getOperand = [&regs, &combo]() -> uint64_t {
+        if (combo < 4) return combo;
+        switch (combo) {
+            case 4:
+                return regs.A;
+            case 5:
+                return regs.B;
+            case 6:
+                return regs.B;
+        }
+        return combo;
+    };
     switch (opcode) {
         case 0: {
             const uint64_t num = regs.A;
-            regs.A = num * std::pow(2, getOperand(regs, combo));
+            regs.A = num / std::pow(2, getOperand());
         } break;
         case 1: {
-            regs.B |= combo;
+            regs.B ^= combo;
         } break;
         case 2: {
-            regs.B = getOperand(regs, combo) << 3;
+            regs.B = getOperand() % 8;
         } break;
         case 3: {
-            // if (regs.A != 0) {
-            //     // pc = combo;
-            //     return {};
-            // }
+            if (regs.A != 0) {
+                pc = combo;
+                return;
+            }
         } break;
         case 4: {
-            regs.C = regs.B | regs.C;
+            regs.B = regs.B ^ regs.C;
         } break;
         case 5: {
-            // TODO eero
-            uint64_t& operand = getOperand(regs, combo);
-            operand += val;
+            std::string str = std::to_string(getOperand() % 8);
+            for (size_t i{}; i < str.size(); ++i) {
+                vec.push_back(str[i] - '0');
+            }
         } break;
         case 6: {
             const uint64_t num = regs.A;
-            regs.B = num * std::pow(2, getOperand(regs, combo));
+            regs.B = num / std::pow(2, getOperand());
         } break;
         case 7: {
             const uint64_t num = regs.A;
-            regs.C = num * std::pow(2, getOperand(regs, combo));
+            regs.C = num / std::pow(2, getOperand());
         } break;
     }
-    return {};
+    pc += 2;
 }
 
-void doCmdInverse(Registers& regs, std::vector<uint64_t>& prog,
-                  const int indx) {
-    if (indx < 0) return;
-    const uint64_t val = prog.at(indx);
-    for (int i = prog.size() - 2; 0 <= i; i -= 2) {
-        const uint64_t opcode = prog[i];
-        const uint64_t combo = prog[i + 1];
-        doCmd(opcode, combo, regs, val);
-        //        if (opcode == 0) {
-        //            regs.A *= (std::pow(2, getOperand(regs, combo)));
-        //        }
-        //        if (opcode == 5) {
-        //            regs.A += val;
-        //        }
-        //        if (opcode == 1)
-        //        {
-        //
-        //        }
-
-        std::cout << "RegA: " << regs.A << ", " << "RegB: " << regs.B << ", "
-                  << "RegC: " << regs.C << ", " << indx << ", val: " << val
-                  << ", " << "opcode: " << opcode << " combo: " << combo
-                  << std::endl;
-
-        /*
-        uint64_t ret{};
-        for (auto it = std::rbegin(prog); it != std::rend(prog); ++it) {
-            if ((it + 1) != std::rend(prog))
-                ret = ret * 8 + *(it + 1);
-            else
-                ret *= 8;
-            std::cout << "Ret: " << ret << std::endl;
-        }
-        return ret;
-        */
+std::string makeOutput(const std::vector<uint64_t>& vec) {
+    std::string ret;
+    for (size_t i{}; i < vec.size(); ++i) {
+        ret += std::to_string(vec.at(i)) + ", ";
     }
-    doCmdInverse(regs, prog, indx - 1);
+    return ret;
+}
+
+uint64_t getRegA(std::vector<uint64_t> prog, const uint64_t val) {
+    if (prog.empty()) {
+        return val;
+    }
+
+    for (uint64_t i{}; i < 8; ++i) {
+        const uint64_t regA = val << 3 | i;
+        uint64_t regB = regA % 8;      // 0
+        regB = regB ^ 2;               // 1
+        uint64_t regC = regA >> regB;  // 2
+        // regA = regA / 8;                // 3
+        regB = regB ^ 0x7;              // 4
+        regB = regB ^ regC;             // 5
+        if (regB % 8 == prog.back()) {  // 6
+            std::vector<uint64_t> prog_t(std::begin(prog), std::end(prog) - 1);
+            const uint64_t val_t = getRegA(prog_t, regA);
+            if (val_t == UINT64_MAX) continue;
+            return val_t;
+        }
+    }
+    return UINT64_MAX;
 }
 
 uint64_t getResult(const std::string& str) {
     // auto regs = parseRegisters(str);
     Registers regs;
     auto prog = parseProgram(str);
-
-    // printf("Register A:%lu\nRegister B:%lu\nRegister C:%lu\n", regs.A,
-    // regs.B,
-    //        regs.C);
-    // std::cout << "Program: ";
-    // for (auto i : prog) {
-    //     std::cout << i << ", ";
-    // }
-    // std::cout << std::endl;
+    const uint64_t val = getRegA(prog, 0);
     std::vector<uint64_t> output;
-    doCmdInverse(regs, prog, prog.size() - 1);
-    return regs.A;
 
-    //    while (pc < prog.size()) {
-    //        const uint64_t opcode = prog.at(pc);
-    //        const uint64_t combo = prog.at(pc + 1);
-    //        const auto res = doCmd(opcode, combo, regs, pc);
-    //        std::copy(std::begin(res), std::end(res),
-    //        std::back_inserter(output));
-    //    }
-    //
-    //    for (size_t i{}; i < output.size(); ++i) {
-    //        std::cout << output.at(i);
-    //        if ((i + 1) < output.size()) {
-    //            std::cout << ",";
-    //        }
-    //    }
-    //    std::cout << std::endl;
+    regs.A = val;
+    regs.B = 0;
+    regs.C = 0;
+    size_t pc{};
+    while (pc < prog.size()) {
+        const uint64_t opcode = prog.at(pc);
+        const uint64_t combo = prog.at(pc + 1);
+        doCmd(opcode, combo, regs, pc, output);
+    }
+
+    if (output != prog) {
+        std::cout << "Incorrect result! Output: " << makeOutput(output).c_str()
+                  << std::endl;
+    }
+    return val;
 }
 
 int main(int args, char* argv[]) {
