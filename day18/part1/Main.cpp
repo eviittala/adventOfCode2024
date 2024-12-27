@@ -19,16 +19,6 @@ struct Point {
         return l.steps > r.steps;
     }
 };
-/*
-struct Points {
-    Point point;
-    Point last;
-    uint64_t steps{UINT64_MAX};
-    bool visited{false};
-    friend bool operator<(const Points& l, const Points& r) {
-        return l.steps > r.steps;
-    }
-};*/
 
 bool isCorrupted(const Point p, const std::vector<Point>& corruptedPoints) {
     return std::find_if(std::begin(corruptedPoints), std::end(corruptedPoints),
