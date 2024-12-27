@@ -72,25 +72,23 @@ bool isValidPoint(const Point& p, const std::vector<std::string>& vec) {
            vec.at(p.y)[p.x] != '#';
 }
 
-uint64_t getResult(const std::string& str) {
-    auto corruptedPoints = parseCorruptedBits(str);
-    auto cPoints = shrink(corruptedPoints, 1024);
+bool isOk(const std::vector<Point>& points, const size_t i) {
+    auto cPoints = shrink(points, i);
 
     std::pair<int, int> gridSize{71, 71};
+    // std::pair<int, int> gridSize{7, 7};
 
     auto grid = makeGrid(gridSize.first, gridSize.second, cPoints);
     // printC(cPoints);
     // common::printVecStr(grid);
 
     std::priority_queue<Point> pq;
-    std::set<Point> seen;
     std::map<std::pair<int, int>, Point> safe;
     Point first;
     first.steps = 0;
     first.x = 0;
     first.y = 0;
     pq.push(first);
-    // seen.insert(first);
 
     while (not pq.empty()) {
         auto point = pq.top();
@@ -98,8 +96,8 @@ uint64_t getResult(const std::string& str) {
 
         if (point.x == (gridSize.first - 1) &&
             point.y == (gridSize.second - 1)) {
-            // std::cout << "Found" << std::endl;
-            return point.steps;
+            // std::cout << "Found " << point.steps << std::endl;
+            return true;
         }
 
         for (auto [new_steps, dir] :
@@ -120,7 +118,19 @@ uint64_t getResult(const std::string& str) {
             }
         }
     }
+    return false;
+}
 
+uint64_t getResult(const std::string& str) {
+    auto corruptedPoints = parseCorruptedBits(str);
+
+    for (size_t i{1}; i < corruptedPoints.size(); ++i) {
+        if (!isOk(corruptedPoints, i)) {
+            std::cout << "The Last nok point: " << corruptedPoints.at(i - 1).x
+                      << "," << corruptedPoints.at(i - 1).y << std::endl;
+            break;
+        }
+    }
     return {};
 }
 
