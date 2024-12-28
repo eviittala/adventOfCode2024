@@ -11,127 +11,56 @@
 
 #include "Common.hpp"
 
-struct Point {
-    int x{INT32_MAX};
-    int y{INT32_MAX};
-    uint64_t steps{UINT64_MAX};
-    friend bool operator<(const Point& l, const Point& r) {
-        return l.steps > r.steps;
-    }
-};
+std::vector<std::string> towels;
+std::vector<std::string> stripes;
 
-bool isCorrupted(const Point p, const std::vector<Point>& corruptedPoints) {
-    return std::find_if(std::begin(corruptedPoints), std::end(corruptedPoints),
-                        [&p](const Point& b) {
-                            return b.x == p.x and b.y == p.y;
-                        }) != std::end(corruptedPoints);
-}
-
-std::vector<std::string> makeGrid(const int max_x, const int max_y,
-                                  const std::vector<Point>& corruptedPoints) {
-    std::vector<std::string> ret;
-    for (int y{}; y < max_y; ++y) {
-        std::string line;
-        for (int x{}; x < max_x; ++x) {
-            line += isCorrupted({x, y}, corruptedPoints) ? '#' : '.';
-        }
-        ret.push_back(std::move(line));
-    }
-    return ret;
-}
-
-std::vector<Point> parseCorruptedBits(const std::string& str) {
-    std::regex re(R"((\d+),(\d+))");
+void parseData(const std::string& str) {
+    std::regex re(R"((\w+))");
     std::smatch sm;
-    std::vector<Point> ret;
-    std::string tmp = str;
+    std::istringstream is(str);
 
-    while (std::regex_search(tmp, sm, re)) {
-        Point point;
-        point.x = std::stoi(sm[1].str());
-        point.y = std::stoi(sm[2].str());
-        ret.push_back(std::move(point));
-        tmp = sm.suffix();
+    std::string line;
+    std::getline(is, line);
+    while (std::regex_search(line, sm, re)) {
+        towels.push_back(sm[1].str());
+        line = sm.suffix();
     }
 
-    return ret;
-}
-
-void printC(const std::vector<Point>& vec) {
-    for (const auto& p : vec) {
-        std::cout << p.x << ", " << p.y << std::endl;
-    }
-}
-
-std::vector<Point> shrink(const std::vector<Point>& vec, const size_t size) {
-    return std::vector<Point>(std::begin(vec), std::begin(vec) + size);
-}
-
-bool isValidPoint(const Point& p, const std::vector<std::string>& vec) {
-    return 0 <= p.x && p.x < vec.at(0).size() && 0 <= p.y && p.y < vec.size() &&
-           vec.at(p.y)[p.x] != '#';
-}
-
-bool isOk(const std::vector<Point>& points, const size_t i) {
-    auto cPoints = shrink(points, i);
-
-    std::pair<int, int> gridSize{71, 71};
-    // std::pair<int, int> gridSize{7, 7};
-
-    auto grid = makeGrid(gridSize.first, gridSize.second, cPoints);
-    // printC(cPoints);
-    // common::printVecStr(grid);
-
-    std::priority_queue<Point> pq;
-    std::map<std::pair<int, int>, Point> safe;
-    Point first;
-    first.steps = 0;
-    first.x = 0;
-    first.y = 0;
-    pq.push(first);
-
-    while (not pq.empty()) {
-        auto point = pq.top();
-        pq.pop();
-
-        if (point.x == (gridSize.first - 1) &&
-            point.y == (gridSize.second - 1)) {
-            // std::cout << "Found " << point.steps << std::endl;
-            return true;
+    while (std::getline(is, line)) {
+        if (std::regex_search(line, sm, re)) {
+            stripes.push_back(sm[1].str());
         }
+    }
+}
 
-        for (auto [new_steps, dir] :
-             {std::tuple{point.steps + 1, Point(0, -1)},
-              {std::tuple{point.steps + 1, Point(1, 0)}},
-              {std::tuple{point.steps + 1, Point(0, 1)}},
-              {std::tuple{point.steps + 1, Point(-1, 0)}}}) {
-            Point p;
-            p.x = point.x + dir.x;
-            p.y = point.y + dir.y;
-            p.steps = new_steps;
-            if (!isValidPoint(p, grid)) continue;
-            if (new_steps < safe[{p.x, p.y}].steps) {
-                safe[{p.x, p.y}].steps = new_steps;
-                // std::cout << "Point: " << p.x << ", " << p.y << ", "
-                //           << new_steps << std::endl;
-                pq.push(p);
+bool isPossible(const std::string stripe) {
+    if (stripe.size() == 0) return true;
+
+    for (const auto& towel : towels) {
+        if (std::equal(std::begin(towel), std::end(towel),
+                       std::begin(stripe))) {
+            if (isPossible(stripe.substr(towel.size()))) {
+                return true;
             }
         }
     }
+
     return false;
 }
 
 uint64_t getResult(const std::string& str) {
-    auto corruptedPoints = parseCorruptedBits(str);
+    parseData(str);
+    // common::printVecStr(towels);
+    // common::printVecStr(stripes);
+    uint64_t ret{};
 
-    for (size_t i{1}; i < corruptedPoints.size(); ++i) {
-        if (!isOk(corruptedPoints, i)) {
-            std::cout << "The Last nok point: " << corruptedPoints.at(i - 1).x
-                      << "," << corruptedPoints.at(i - 1).y << std::endl;
-            break;
+    for (const auto& stripe : stripes) {
+        if (isPossible(stripe)) {
+            ++ret;
         }
     }
-    return {};
+
+    return ret;
 }
 
 int main(int args, char* argv[]) {
