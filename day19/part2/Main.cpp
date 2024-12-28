@@ -33,81 +33,28 @@ void parseData(const std::string& str) {
     }
 }
 
-std::vector<std::vector<std::string>> getWays(const std::string& stripe) {
-    size_t pos{};
-    pos = stripe.find("brwrr");
-    if (pos == 0) {
-        return {{{"b"}, {"r"}, {"wr"}, {"r"}}, {{"br", "wr", "r"}}};
-    }
-    pos = stripe.find("bggr");
-    if (pos == 0) {
-        return {{{"b"}, {"g"}, {"g"}, {"r"}}};
-    }
-    pos = stripe.find("gbbr");
-    if (pos == 0) {
-        return {
-            {{"g"}, {"b"}, {"b"}, {"r"}},
-            {{"g"}, {"b"}, {"br"}},
-            {{"gb"}, {"b"}, {"r"}},
-            {{"gb"}, {"br"}},
-        };
-    }
-    pos = stripe.find("rrbgbr");
-    if (pos == 0) {
-        return {
-            {{"r"}, {"r"}, {"b"}, {"g"}, {"b"}, {"r"}},
-            {{"r"}, {"r"}, {"b"}, {"g"}, {"br"}},
-            {{"r"}, {"r"}, {"b"}, {"gb"}, {"r"}},
-            {{"r"}, {"rb"}, {"g"}, {"b"}, {"r"}},
-            {{"r"}, {"rb"}, {"g"}, {"br"}},
-            {{"r"}, {"rb"}, {"gb"}, {"r"}},
-        };
-    }
-    pos = stripe.find("bwurrg");
-    if (pos == 0) {
-        return {{{"bwu"}, {"r"}, {"r"}, {"g"}}};
-    }
-    pos = stripe.find("brgr");
-    if (pos == 0) {
-        return {{{"b"}, {"r"}, {"g"}, {"r"}}, {{"br", "g", "r"}}};
-    }
-    return {{stripe}};
-}
+std::unordered_map<std::string, uint64_t> save;
 
-size_t getSize(const std::vector<std::string>& vec) {
-    std::string str;
-    for (const auto& i : vec) {
-        str += i;
+uint64_t countAllPossibleWays(const std::string stripe) {
+    if (stripe.size() == 0) {
+        return 1;
     }
-    return str.size();
-}
 
-uint64_t countPossibleWays(const std::string stripe) {
-    if (stripe.size() == 0) return 0;
+    if (save.contains(stripe)) {
+        return save[stripe];
+    }
 
     uint64_t ret{};
 
-    auto ways = getWays(stripe);
-    for (const auto& way : ways) {
-        bool success{false};
-        for (const auto& m : way) {
-            for (const auto& towel : towels) {
-                if (towel == m) {
-                    success = true;
-                    break;
-                }
-                //                if (std::equal(std::begin(towel),
-                //                std::end(towel),
-                //                               std::begin(stripe))) {
-                //                    ret +=
-                //                    countPossibleWays(stripe.substr(towel.size()));
-                //                }
-            }
+    for (const auto& towel : towels) {
+        if (towel.size() <= stripe.size() &&
+            std::equal(std::begin(towel), std::end(towel),
+                       std::begin(stripe))) {
+            ret += countAllPossibleWays(stripe.substr(towel.size()));
         }
-        if (success) ++ret;
     }
-    ret += countPossibleWays(stripe.substr(getSize(ways.at(0))));
 
+    save[stripe] = ret;
     return ret;
 }
 
@@ -116,9 +63,12 @@ uint64_t getResult(const std::string& str) {
     // common::printVecStr(towels);
     // common::printVecStr(stripes);
     uint64_t ret{};
+    // uint64_t c{};
 
     for (const auto& stripe : stripes) {
-        ret += countPossibleWays(stripe);
+        const uint64_t sum = countAllPossibleWays(stripe);
+        // std::cout << ++c << ". " << stripe << " sum: " << sum << std::endl;
+        ret += sum;
     }
 
     return ret;
