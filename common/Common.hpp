@@ -21,4 +21,5 @@ bool isCollinear(const int x1, const int y1, const int x2, const int y2,
                  const int x3, const int y3);
 std::pair<int, int> getXY(const int pos, const size_t lineSize);
 inline int toInt(const char c) { return c - '0'; }
+std::vector<std::string> parseLines(const std::string& str);
 }  // namespace common

@@ -120,4 +120,16 @@ std::pair<int, int> getXY(const int pos, const size_t lineSize) {
     const int y = pos / lineSize;
     return {x, y};
 }
+
+std::vector<std::string> parseLines(const std::string& str) {
+    std::istringstream is(str);
+    std::vector<std::string> ret;
+
+    std::string line;
+    while (std::getline(is, line)) {
+        ret.push_back(line);
+    }
+
+    return ret;
+}
 }  // namespace common

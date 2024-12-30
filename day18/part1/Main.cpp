@@ -84,7 +84,7 @@ uint64_t getResult(const std::string& str) {
 
     std::priority_queue<Point> pq;
     std::set<Point> seen;
-    std::map<std::pair<int, int>, Point> safe;
+    std::map<std::pair<int, int>, Point> save;
     Point first;
     first.steps = 0;
     first.x = 0;
@@ -112,8 +112,8 @@ uint64_t getResult(const std::string& str) {
             p.y = point.y + dir.y;
             p.steps = new_steps;
             if (!isValidPoint(p, grid)) continue;
-            if (new_steps < safe[{p.x, p.y}].steps) {
-                safe[{p.x, p.y}].steps = new_steps;
+            if (new_steps < save[{p.x, p.y}].steps) {
+                save[{p.x, p.y}].steps = new_steps;
                 // std::cout << "Point: " << p.x << ", " << p.y << ", "
                 //           << new_steps << std::endl;
                 pq.push(p);
