@@ -14,6 +14,8 @@
 struct Point {
     int x{};
     int y{};
+    int p_x{INT32_MAX};
+    int p_y{INT32_MAX};
     uint64_t sec{UINT64_MAX};
     friend bool operator<(const Point& l, const Point& r) {
         return l.sec > r.sec;
@@ -37,9 +39,21 @@ std::pair<int, int> getStart(const std::vector<std::string>& vec) {
     return {0, 0};
 }
 
+std::pair<int, int> getEnd(const std::vector<std::string>& vec) {
+    for (int y{}; y < vec.size(); ++y) {
+        for (int x{}; x < vec.at(0).size(); ++x) {
+            if (vec.at(y)[x] == 'E') return {x, y};
+        }
+    }
+    abort();
+    return {0, 0};
+}
+
 bool isEnd(const Point& p, const std::vector<std::string>& vec) {
     return (vec.at(p.y)[p.x] == 'E');
 }
+
+std::map<std::pair<int, int>, Point> way;
 
 uint64_t findWay(const std::vector<std::string>& vec) {
     std::priority_queue<Point> pq;
@@ -49,7 +63,6 @@ uint64_t findWay(const std::vector<std::string>& vec) {
     first.x = startPos.first;
     first.y = startPos.second;
     pq.push(first);
-    std::map<std::pair<int, int>, uint64_t> save;
 
     while (not pq.empty()) {
         auto point = pq.top();
@@ -68,8 +81,10 @@ uint64_t findWay(const std::vector<std::string>& vec) {
             new_point.sec = new_sec;
             if (!isValidPoint(new_point, vec)) continue;
             const auto pairXY = std::make_pair(new_point.x, new_point.y);
-            if (!save.contains(pairXY) || new_point.sec < save[pairXY]) {
-                save[pairXY] = new_point.sec;
+            if (!way.contains(pairXY) || new_point.sec < way[pairXY].sec) {
+                way[pairXY].sec = new_point.sec;
+                way[pairXY].p_x = point.x;
+                way[pairXY].p_y = point.y;
                 pq.push(new_point);
                 // std::cout << pairXY.first << ", " << pairXY.second <<
                 // std::endl;
@@ -86,13 +101,33 @@ std::vector<std::string> getVec(const std::vector<std::string>& vec,
     return ret;
 }
 
+std::map<std::pair<int, int>, uint64_t> getRoute(
+    const std::vector<std::string>& vec) {
+    auto pos = getEnd(vec);
+    // std::cout << pos.first << ", " << pos.second << std::endl;
+    std::vector<std::string> tmp = vec;
+    std::map<std::pair<int, int>, uint64_t> route;
+
+    while (way.contains(pos)) {
+        route[pos] = way[pos].sec;
+        if (vec.at(pos.second)[pos.first] == 'S') break;
+        if (vec.at(pos.second)[pos.first] != 'E')
+            tmp.at(pos.second)[pos.first] = '0';
+        pos = {way[pos].p_x, way[pos].p_y};
+    }
+    // common::printVecStr(tmp);
+    return route;
+}
+
 uint64_t getResult(const std::string& str) {
-    auto data = common::parseLines(str);
+    const auto data = common::parseLines(str);
     common::printVecStr(data);
 
     const auto initial_secs = findWay(data);
+    std::cout << "Initial secs: " << initial_secs << std::endl;
     std::map<uint64_t, uint64_t> cheats;
 
+    /*
     for (int y{1}; y < (data.size() - 1); ++y) {
         for (int x{1}; x < (data.at(0).size() - 1); ++x) {
             if (data.at(y)[x] != '#') continue;
@@ -100,6 +135,31 @@ uint64_t getResult(const std::string& str) {
             const auto secs = findWay(data_t);
             if (secs < initial_secs) {
                 const uint64_t saved_secs = initial_secs - secs;
+                cheats[saved_secs]++;
+            }
+        }
+    }
+    */
+    auto route = getRoute(data);
+    for (auto& [pos, sec] : route) {
+        auto x = pos.first;
+        auto y = pos.second;
+        Point p(pos.first, pos.second);
+
+        for (auto [nx, ny] : {std::tuple(x, y - 2), std::tuple(x + 1, y - 1),
+                              std::tuple(x + 2, y), std::tuple(x + 1, y + 1),
+                              std::tuple(x, y + 2), std::tuple(x - 1, y + 1),
+                              std::tuple(x - 2, y), std::tuple(x - 1, y - 1)})
+
+        /*
+                        {std::pair(x + 2, y), std::pair(x + 1, y + 1),
+                                    std::pair(x, y + 2), std::pair(x - 1, y +
+           1)}) */
+        {
+            if (!isValidPoint(Point(nx, ny), data)) continue;
+            if ((sec + 2) < route.at(std::pair(nx, ny))) {
+                const uint64_t saved_secs =
+                    route.at(std::pair(nx, ny)) - (sec + 2);
                 cheats[saved_secs]++;
             }
         }
