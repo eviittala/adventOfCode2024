@@ -119,61 +119,70 @@ std::map<std::pair<int, int>, uint64_t> getRoute(
     return route;
 }
 
+void printMapPair(const std::map<std::pair<int, int>, uint64_t>& map) {
+    for (const auto& [pos, sec] : map) {
+        std::cout << "(" << pos.first << ", " << pos.second << ") = " << sec
+                  << std::endl;
+    }
+}
+
 uint64_t getResult(const std::string& str) {
-    const auto data = common::parseLines(str);
-    common::printVecStr(data);
+    const auto grid = common::parseLines(str);
 
-    const auto initial_secs = findWay(data);
-    std::cout << "Initial secs: " << initial_secs << std::endl;
-    std::map<uint64_t, uint64_t> cheats;
+    const size_t rows = grid.size();
+    const size_t cols = grid.at(0).size();
 
-    /*
-    for (int y{1}; y < (data.size() - 1); ++y) {
-        for (int x{1}; x < (data.at(0).size() - 1); ++x) {
-            if (data.at(y)[x] != '#') continue;
-            const auto data_t = getVec(data, x, y);
-            const auto secs = findWay(data_t);
-            if (secs < initial_secs) {
-                const uint64_t saved_secs = initial_secs - secs;
-                cheats[saved_secs]++;
+    size_t r{};
+    size_t c{};
+    for (; r < rows; ++r) {
+        bool found(false);
+        for (c = 0; c < cols; ++c) {
+            if (grid[r][c] == 'S') {
+                found = true;
+                break;
             }
         }
+        if (found) break;
     }
-    */
-    auto route = getRoute(data);
-    for (auto& [pos, sec] : route) {
-        auto x = pos.first;
-        auto y = pos.second;
-        Point p(pos.first, pos.second);
 
-        for (auto [nx, ny] : {std::tuple(x, y - 2), std::tuple(x + 1, y - 1),
-                              std::tuple(x + 2, y), std::tuple(x + 1, y + 1),
-                              std::tuple(x, y + 2), std::tuple(x - 1, y + 1),
-                              std::tuple(x - 2, y), std::tuple(x - 1, y - 1)})
-
-        /*
-                        {std::pair(x + 2, y), std::pair(x + 1, y + 1),
-                                    std::pair(x, y + 2), std::pair(x - 1, y +
-           1)}) */
-        {
-            if (!isValidPoint(Point(nx, ny), data)) continue;
-            if ((sec + 2) < route.at(std::pair(nx, ny))) {
-                const uint64_t saved_secs =
-                    route.at(std::pair(nx, ny)) - (sec + 2);
-                cheats[saved_secs]++;
-            }
+    std::vector<std::vector<int>> dists(rows);
+    for (size_t nr{}; nr < rows; ++nr) {
+        for (size_t nc{}; nc < cols; ++nc) {
+            dists.at(nr).push_back(-1);
         }
     }
 
-    uint64_t ret{};
+    dists[r][c] = 0;
 
-    for (const auto& [sec, cheat] : cheats) {
-        std::cout << "There are " << cheat << " cheats that save " << sec
-                  << " picoseconds." << std::endl;
-        if (sec >= 100) ret += cheat;
+    while (grid.at(r)[c] != 'E') {
+        for (auto [nr, nc] : {std::tuple(r + 1, c), std::tuple(r - 1, c),
+                              std::tuple(r, c + 1), std::tuple(r, c - 1)}) {
+            if (nr < 0 or nc < 0 or nr >= rows or nc >= cols) continue;
+            if (grid[nr][nc] == '#') continue;
+            if (dists.at(nr).at(nc) != -1) continue;
+            dists[nr][nc] = dists[r][c] + 1;
+            r = nr;
+            c = nc;
+        }
+    }
+    // common::printVecVec(dists);
+
+    uint64_t count{};
+
+    for (r = 0; r < rows; ++r) {
+        for (c = 0; c < cols; ++c) {
+            if (dists.at(r).at(c) == -1) continue;
+            for (auto [nr, nc] :
+                 {std::tuple(r + 2, c), std::tuple(r + 1, c + 1),
+                  std::tuple(r, c + 2), std::tuple(r - 1, c + 1)}) {
+                if (nr < 0 or nc < 0 or nr >= rows or nc >= cols) continue;
+                if (grid[nr][nc] == '#') continue;
+                if (std::abs(dists[r][c] - dists[nr][nc]) >= 102) ++count;
+            }
+        }
     }
 
-    return ret;
+    return count;
 }
 
 int main(int args, char* argv[]) {
@@ -181,3 +190,8 @@ int main(int args, char* argv[]) {
     std::cout << "Result: " << getResult(str) << std::endl;
     return 0;
 }
+// 961057 too low
+// 2988002 too high
+// 1147087 Wrong
+// 1080164 wrong
+// 1092185 wrong
