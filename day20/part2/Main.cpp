@@ -168,16 +168,30 @@ uint64_t getResult(const std::string& str) {
     // common::printVecVec(dists);
 
     uint64_t count{};
+    std::set<std::tuple<int, int, int, int>> seen;
 
     for (r = 0; r < rows; ++r) {
         for (c = 0; c < cols; ++c) {
             if (dists.at(r).at(c) == -1) continue;
-            for (auto [nr, nc] :
-                 {std::tuple(r + 2, c), std::tuple(r + 1, c + 1),
-                  std::tuple(r, c + 2), std::tuple(r - 1, c + 1)}) {
-                if (nr < 0 or nc < 0 or nr >= rows or nc >= cols) continue;
-                if (grid[nr][nc] == '#') continue;
-                if (std::abs(dists[r][c] - dists[nr][nc]) >= 102) ++count;
+            if (grid.at(r)[c] == '#') continue;
+            for (int rad{2}; rad < 21; ++rad) {
+                for (int dr{}; dr < (rad + 1); ++dr) {
+                    const int dc = rad - dr;
+                    for (auto [nr, nc] : {std::tuple(r + dr, c + dc),
+                                          std::tuple(r + dr, c - dc),
+                                          std::tuple(r - dr, c + dc),
+                                          std::tuple(r - dr, c - dc)}) {
+                        if (nr < 0 or nc < 0 or nr >= rows or nc >= cols)
+                            continue;
+                        if (grid.at(nr)[nc] == '#') continue;
+                        if (dists.at(nr).at(nc) == -1) continue;
+                        if (dists[r][c] > dists[nr][nc] &&
+                            dists[r][c] - dists[nr][nc] >= 100 + rad) {
+                            const auto success = seen.insert({r, c, nr, nc});
+                            if (success.second) ++count;
+                        }
+                    }
+                }
             }
         }
     }
@@ -190,8 +204,3 @@ int main(int args, char* argv[]) {
     std::cout << "Result: " << getResult(str) << std::endl;
     return 0;
 }
-// 961057 too low
-// 2988002 too high
-// 1147087 Wrong
-// 1080164 wrong
-// 1092185 wrong
