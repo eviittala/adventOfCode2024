@@ -193,7 +193,7 @@ uint64_t getResult(const std::string& str) {
         for (const char in : code) {
             std::cout << "Searching: " << in << std::endl;
             auto routes0 = findShortest(in, robot0, pos0);
-            printVec("routes0", routes0);
+            // printVec("routes0", routes0);
             std::string shortest;
             Pos pos1_t(pos1);
             for (const auto& route0 : routes0) {
@@ -201,7 +201,7 @@ uint64_t getResult(const std::string& str) {
                 std::string temp;
                 for (const char c0 : route0) {
                     const auto routes1 = findShortest(c0, robot1, pos1);
-                    printVec("routes1", routes1);
+                    // printVec("routes1", routes1);
                     std::vector<std::string> routes3;
                     Pos pos2_t(pos2);
                     for (const auto& route1 : routes1) {
@@ -209,7 +209,7 @@ uint64_t getResult(const std::string& str) {
                         std::string routes2_t;
                         for (const char c1 : route1) {
                             const auto routes2 = findShortest(c1, robot2, pos2);
-                            printVec("routes2", routes2);
+                            // printVec("routes2", routes2);
                             routes2_t += getShortest(routes2);
                         }
                         routes3.push_back(routes2_t);
